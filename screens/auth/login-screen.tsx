@@ -121,10 +121,13 @@ const styles = StyleSheet.create({
     padding: 24,
     flexGrow: 1,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     marginBottom: 24,
     alignItems: 'center',
+    width: '100%',
+    maxWidth: 420,
   },
   title: {
     fontSize: 28,
@@ -145,6 +148,8 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
+    width: '100%',
+    maxWidth: 420,
   },
   formError: {
     color: '#ef4444',
