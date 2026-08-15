@@ -18,6 +18,14 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
         }}
       />
+      {/* Tab de Preguntas: feature principal de la app */}
+      <Tabs.Screen
+        name="questions"
+        options={{
+          title: 'Preguntas',
+          tabBarIcon: ({ color, size }) => <Ionicons name="help-circle-outline" size={size} color={color} />,
+        }}
+      />
       <Tabs.Screen
         name="profile"
         options={{
@@ -25,6 +33,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
         }}
       />
+      {/* Ocultar pantallas que no son tabs del bottom bar */}
     </Tabs>
   );
 }

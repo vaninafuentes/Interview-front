@@ -1,0 +1,37 @@
+{
+  "home": {
+    "greeting": "Hello, {{name}}",
+    "subtitle": "You have logged in successfully.",
+    "logout": "Log out"
+  },
+  "questions": {
+    "title": "Interview Questions",
+    "subtitle_one": "{{count}} question available",
+    "subtitle_other": "{{count}} questions available",
+    "loading": "Loading questions...",
+    "retry": "Retry",
+    "reload": "Reload",
+    "empty_title": "No questions",
+    "empty_message": "There are no questions loaded yet.\nPlease try again later.",
+    "error_title": "Loading error",
+    "error_fallback": "An unexpected error occurred"
+  },
+  "auth": {
+    "login_title": "Welcome",
+    "login_subtitle": "Sign in to your account",
+    "email": "Email",
+    "password": "Password",
+    "login_button": "Sign in",
+    "register_link": "Don't have an account? Sign up",
+    "register_title": "Create account",
+    "register_subtitle": "Sign up to get started",
+    "name": "Name",
+    "register_button": "Sign up",
+    "login_link": "Already have an account? Sign in"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "back": "Back"
+  }
+}

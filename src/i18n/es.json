@@ -1,0 +1,37 @@
+{
+  "home": {
+    "greeting": "Hola, {{name}}",
+    "subtitle": "Has iniciado sesión correctamente.",
+    "logout": "Cerrar sesión"
+  },
+  "questions": {
+    "title": "Preguntas de Entrevista",
+    "subtitle_one": "{{count}} pregunta disponible",
+    "subtitle_other": "{{count}} preguntas disponibles",
+    "loading": "Cargando preguntas...",
+    "retry": "Reintentar",
+    "reload": "Recargar",
+    "empty_title": "Sin preguntas",
+    "empty_message": "Todavía no hay preguntas cargadas.\nVolvé a intentar más tarde.",
+    "error_title": "Error al cargar",
+    "error_fallback": "Ocurrió un error inesperado"
+  },
+  "auth": {
+    "login_title": "Bienvenido",
+    "login_subtitle": "Ingresá a tu cuenta",
+    "email": "Email",
+    "password": "Contraseña",
+    "login_button": "Iniciar sesión",
+    "register_link": "¿No tenés cuenta? Registrate",
+    "register_title": "Crear cuenta",
+    "register_subtitle": "Registrate para comenzar",
+    "name": "Nombre",
+    "register_button": "Registrarse",
+    "login_link": "¿Ya tenés cuenta? Iniciá sesión"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "back": "Volver"
+  }
+}

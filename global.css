@@ -1,0 +1,9 @@
+/* global.css
+ * ----------
+ * Archivo CSS global requerido por NativeWind v4.
+ * Este archivo activa la directiva de Tailwind para React Native.
+ * Se importa en el _layout.tsx raíz de la aplicación.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

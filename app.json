@@ -41,7 +41,7 @@
       ]
     ],
     "extra": {
-      "apiBaseUrl": "https://api.example.com"
+      "apiBaseUrl": "http://localhost:8080"
     },
     "experiments": {
       "typedRoutes": true,
