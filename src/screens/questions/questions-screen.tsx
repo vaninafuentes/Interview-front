@@ -1,33 +1,29 @@
 /**
  * src/screens/questions/questions-screen.tsx
  * -------------------------------------------
- * Contenedor lógico de la pantalla de preguntas.
- *
- * Patrón Screen + View:
- * QuestionsScreen = LÓGICA
- * QuestionsView   = UI pura
- *
- * Responsabilidades de este archivo:
- *   1. Obtener datos con useQuestions() (hook → React Query → Axios → API)
- *   2. Definir el handler de presionar una pregunta
- *   3. Pasar todo a QuestionsView como props
- *
- * Flujo de datos (de abajo hacia arriba):
- *   Backend → Axios (lib/) → questions-api (data/) → useQuestions (hooks/) → QuestionsScreen → QuestionsView
+ * Contenedor lógico de la pantalla de banco de preguntas.
  */
 
+import { useRouter } from 'expo-router';
 import { useQuestions } from '@/src/hooks/use-questions';
 import { QuestionsView } from './questions-view';
 import type { Question } from '@/src/domain/question';
 
 export default function QuestionsScreen() {
+  const router = useRouter();
   const { questions, isLoading, isError, error, refetch } = useQuestions();
 
-  // Handler: qué hacer cuando el usuario presiona una pregunta
-  // Por ahora loguea; luego se conectará a la navegación
+  /** Al presionar una pregunta, inicia una sesión de práctica inmediata con ella */
   const handleQuestionPress = (question: Question) => {
-    // TODO: router.push(`/questions/${question.id}`)
-    console.log('[QuestionsScreen] Pregunta seleccionada:', question.id);
+    router.push({
+      pathname: '/(tabs)/interview',
+      params: {
+        questionText: question.text,
+        category: question.category,
+        difficulty: question.difficulty,
+        questionId: question.id.toString(),
+      },
+    });
   };
 
   return (

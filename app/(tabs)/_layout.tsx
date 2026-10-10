@@ -1,39 +1,76 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { Colors } from '@/src/theme';
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#0a7ea4',
-        tabBarInactiveTintColor: '#94a3b8',
-        tabBarStyle: { borderTopWidth: 0, elevation: 0 },
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textMuted,
+        tabBarStyle: {
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: Colors.border,
+          elevation: 6,
+          height: 64,
+          paddingBottom: 10,
+          paddingTop: 6,
+          shadowColor: Colors.primary,
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '700',
+        },
       }}
     >
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
+          title: 'Inicio',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
+          ),
         }}
       />
-      {/* Tab de Preguntas: feature principal de la app */}
       <Tabs.Screen
-        name="questions"
+        name="interview"
         options={{
-          title: 'Preguntas',
-          tabBarIcon: ({ color, size }) => <Ionicons name="help-circle-outline" size={size} color={color} />,
+          title: 'Simulacro',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'mic' : 'mic-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="jobs"
+        options={{
+          title: 'Empleos',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'briefcase' : 'briefcase-outline'} size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Perfil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+          ),
         }}
       />
-      {/* Ocultar pantallas que no son tabs del bottom bar */}
+      {/* Oculto de la barra inferior pero accesible desde el botón de la Home */}
+      <Tabs.Screen
+        name="questions"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

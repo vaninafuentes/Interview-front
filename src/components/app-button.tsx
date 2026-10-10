@@ -46,7 +46,7 @@ export const AppButton = ({ title, variant = 'primary', isLoading = false, disab
       {isLoading && (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' ? '#fff' : Colors.primary}
+          color={variant === 'primary' ? '#ffffff' : Colors.primary}
           style={styles.spinner}
         />
       )}
@@ -64,17 +64,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: BorderRadius.md,
-    minHeight: 50,
+    borderRadius: BorderRadius.full,
+    minHeight: 52,
   },
   // --- Variantes de botón ---
   primary: {
     backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 3,
   },
   secondary: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.surface,
     borderWidth: 1.5,
-    borderColor: Colors.primary,
+    borderColor: Colors.border,
   },
   danger: {
     backgroundColor: Colors.error,
@@ -86,13 +91,13 @@ const styles = StyleSheet.create({
   // --- Texto por variante ---
   text: {
     fontSize: FontSize.md,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   primaryText: {
     color: '#ffffff',
   },
   secondaryText: {
-    color: Colors.primary,
+    color: Colors.textPrimary,
   },
   dangerText: {
     color: '#ffffff',

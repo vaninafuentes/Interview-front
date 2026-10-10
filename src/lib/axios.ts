@@ -25,6 +25,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '@/src/constants/api';
+import { authEvents } from '@/src/lib/auth-events';
 
 const AUTH_STORAGE_KEY = 'auth-session';
 
@@ -33,8 +34,8 @@ export const axiosClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  /** Timeout de 10 segundos - si el servidor no responde, lanza error */
-  timeout: 10_000,
+  /** Timeout de 30 segundos — la evaluación de Groq (LLaMA 70B) puede tardar hasta ~20s */
+  timeout: 30_000,
 });
 
 /**
@@ -51,10 +52,15 @@ axiosClient.interceptors.request.use(
         const session = JSON.parse(stored);
         if (session?.token) {
           config.headers.Authorization = `Bearer ${session.token}`;
+          console.log(`[Axios] JWT adjuntado | ${config.method?.toUpperCase()} ${config.url} | token: ${session.token.substring(0, 20)}...`);
+        } else {
+          console.warn(`[Axios] Sesión en storage pero sin token | ${config.url}`);
         }
+      } else {
+        console.warn(`[Axios] Sin sesión en AsyncStorage | ${config.url}`);
       }
-    } catch {
-      // Si falla la lectura de AsyncStorage, continúa sin token
+    } catch (e) {
+      console.error('[Axios] Error leyendo AsyncStorage:', e);
     }
     return config;
   },
@@ -77,21 +83,26 @@ axiosClient.interceptors.response.use(
       const backendMessage = data?.message || data?.error || null;
 
       if (status === 401) {
-        console.warn('[Axios] 401 - No autorizado');
+        console.warn('[Axios] 401 - No autorizado. Cerrando sesión.');
+        // Limpiar AsyncStorage y disparar logout en el contexto de auth
+        AsyncStorage.removeItem('auth-session').catch(() => {});
+        authEvents.triggerLogout();
       }
       if (status === 409) {
         console.warn('[Axios] 409 - Conflicto (email duplicado?)');
       }
       if (status >= 500) {
-        console.error('[Axios] Error del servidor:', status);
+        console.error('[Axios] Error del servidor:', status, data);
       }
 
       // Re-lanzar con mensaje legible del backend para mostrar en formularios
       if (backendMessage) {
         return Promise.reject(new Error(backendMessage));
       }
+      // Fallback: mostrar el status
+      return Promise.reject(new Error(`Error del servidor (${status})`));
     } else if (error.request) {
-      console.error('[Axios] Sin respuesta del servidor (red caída o backend apagado)');
+      console.error('[Axios] Sin respuesta del servidor (red caída o backend apagado):', error.message);
       return Promise.reject(new Error('No se pudo conectar con el servidor. Verificá tu conexión.'));
     }
     return Promise.reject(error);

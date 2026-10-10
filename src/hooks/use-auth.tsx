@@ -28,6 +28,28 @@ import type {
   User,
 } from '@/src/domain/auth';
 import { loginRequest, registerRequest } from '@/src/data/api/auth-api';
+import { authEvents } from '@/src/lib/auth-events';
+
+/**
+ * Decodifica el payload de un JWT y devuelve true si el token está vencido.
+ * JWT = base64(header).base64(payload).signature
+ * El campo `exp` es la expiración en segundos desde epoch.
+ */
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const payloadB64 = token.split('.')[1];
+    // Normalizar base64url → base64 estándar
+    const padded = payloadB64.replace(/-/g, '+').replace(/_/g, '/') +
+      '='.repeat((4 - (payloadB64.length % 4)) % 4);
+    const decoded = JSON.parse(atob(padded));
+    if (typeof decoded.exp !== 'number') return false;
+    // exp está en segundos; Date.now() en ms
+    return Date.now() / 1000 > decoded.exp;
+  } catch {
+    // Si no se puede decodificar, tratar como vencido por seguridad
+    return true;
+  }
+};
 
 const AUTH_STORAGE_KEY = 'auth-session';
 
@@ -51,11 +73,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const isValidSession = parsed?.user && parsed?.token;
 
         if (isValidSession && isMounted) {
+          // Verificar si el token JWT ya venció
+          if (isTokenExpired(parsed.token)) {
+            console.warn('[Auth] Token expirado. Cerrando sesión automáticamente.');
+            await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+            // setIsLoading(false) se ejecuta en finally, user/token quedan null → redirige al login
+          } else {
             setUser(parsed.user);
             setToken(parsed.token);
-          } else {
-            await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
           }
+        } else {
+          await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+        }
       } catch (error) {
         console.error('[Auth] Fallo al restaurar sesión:', error);
         await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
@@ -111,9 +140,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => clearSession();
 
+  /** Actualizar datos del perfil localmente en sesión persistida */
+  const updateUser = async (updatedFields: Partial<User>) => {
+    if (!user || !token) return;
+    const updatedUser: User = { ...user, ...updatedFields };
+    await persistSession({ user: updatedUser, token });
+  };
+
+  // Registrar clearSession como listener para que axios pueda disparar el logout
+  // cuando recibe un 401 (token vencido o inválido en mitad de la sesión)
+  useEffect(() => {
+    authEvents.setLogoutListener(clearSession);
+  }, []);
+
   // useMemo evita que el contexto se re-cree en cada render del Provider
   const value = useMemo<AuthContextValue>(
-    () => ({ user, token, isLoading, login, register, logout }),
+    () => ({ user, token, isLoading, login, register, logout, updateUser }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [user, token, isLoading]
   );
