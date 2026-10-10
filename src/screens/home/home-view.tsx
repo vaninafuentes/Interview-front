@@ -1,58 +1,253 @@
 /**
  * src/screens/home/home-view.tsx
  * --------------------------------
- * Vista PURA del Home: solo recibe props y renderiza UI.
+ * Pantalla Principal con diseño y estética aiApply (lavanda, blanco, índigo y fucsia).
  *
- * Patrón Screen + View (Divide y Vencerás):
- * ------------------------------------------
- * HOME-SCREEN → obtiene datos del hook (useAuth) → pasa props a HOME-VIEW
- * HOME-VIEW   → solo renderiza, sin llamadas a hooks de datos, sin lógica
- *
- * ¿Por qué separar Screen y View?
- *   - HomeView es testeable sin mocks de hooks
- *   - HomeView se puede reusar en un modal, una preview, un test, etc.
- *   - HomeScreen centraliza la lógica: qué datos mostrar y qué acciones tomar
- *
- * Aplica:
- *   ✅ Ternario en lugar de if/else
- *   ✅ && para condicionales simples
- *   ✅ Composición por props (recibe user, onLogout)
- *   ✅ useTranslation para textos (i18n)
+ * Características:
+ *   - Logo de marca InterviewIA✦
+ *   - Badge "Excellent ★★★★★ 4.7"
+ *   - Título heroico con acento de color de alto impacto
+ *   - Botón pill "Prueba Interview IA ahora →"
+ *   - Acceso directo al Banco de Preguntas
+ *   - Acceso directo a Búsqueda y Postulación IA a Empleos
+ *   - Racha y métricas limpias sin sobrecarga visual
  */
 
-import { StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
-import { AppButton } from '@/src/components/app-button';
-import { Colors, Spacing, FontSize, BorderRadius } from '@/src/theme';
 import type { User } from '@/src/domain/auth';
+import type { InterviewStats } from '@/src/domain/interview';
+import { BorderRadius, Colors, FontSize, Spacing } from '@/src/theme';
+import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
+import {
+  Animated,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type HomeViewProps = {
   user: User | null;
+  stats?: InterviewStats;
+  isStatsLoading: boolean;
   isLoggingOut: boolean;
   onLogout: () => void;
+  onRefreshStats?: () => void;
 };
 
-export const HomeView = ({ user, isLoggingOut, onLogout }: HomeViewProps) => {
-  const { t } = useTranslation();
+const getInitials = (name: string) =>
+  name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('');
+
+export const HomeView = ({
+  user,
+  stats,
+  isStatsLoading,
+  onRefreshStats,
+}: HomeViewProps) => {
+  const router = useRouter();
+  const initials = getInitials(user?.name ?? 'U');
+
+  const streakDays = stats?.currentStreak ?? 0;
+  const streakText = streakDays === 1 ? '1 día' : `${streakDays} días`;
+  const avgScore = stats?.averageScore ?? 0;
+
+  // Animación suave de respiración del fuego de racha
+  const flameScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(flameScale, {
+          toValue: 1.15,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(flameScale, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [flameScale]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <View style={styles.container}>
-        <View style={styles.card}>
-          {/* Ternario: si tiene nombre lo muestra, si no "Usuario" */}
-          <Text style={styles.title}>
-            {t('home.greeting', { name: user?.name ?? 'Usuario' })}
-          </Text>
-          <Text style={styles.subtitle}>{t('home.subtitle')}</Text>
-          <AppButton
-            title={t('home.logout')}
-            onPress={onLogout}
-            variant="secondary"
-            isLoading={isLoggingOut}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isStatsLoading}
+            onRefresh={onRefreshStats}
+            tintColor={Colors.primary}
           />
+        }
+      >
+        {/* ── Barra Superior (Logo + Avatar Perfil) ── */}
+        <View style={styles.topBar}>
+          <View style={styles.logoRow}>
+            <Text style={styles.logoText}>InterviewIA</Text>
+            <Text style={styles.logoSparkle}>✦</Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.avatarButton}
+            onPress={() => router.push('/(tabs)/profile')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.avatarButtonText}>{initials || 'U'}</Text>
+          </TouchableOpacity>
         </View>
-      </View>
+
+        {/* ── Badge de Calificación "Excellent 4.7" ── */}
+        <View style={styles.ratingBadge}>
+          <Text style={styles.ratingLabel}>Excellent</Text>
+          <View style={styles.starsRow}>
+            {[1, 2, 3, 4, 5].map((s) => (
+              <Feather key={s} name="star" size={13} color="#10B981" style={{ marginHorizontal: 1 }} />
+            ))}
+          </View>
+          <Text style={styles.ratingNumber}>4.7</Text>
+        </View>
+
+        {/* ── Titular Heroico Estilo aiApply ── */}
+        <View style={styles.heroSection}>
+          <Text style={styles.heroHeading}>
+            Mantén calma y claridad en toda entrevista con un{' '}
+            <Text style={styles.heroHeadingHighlight}>Asistente IA de Entrevistas</Text>
+          </Text>
+
+          <Text style={styles.heroSubhead}>
+            Tu entrenador personal de entrevistas impulsado por IA
+          </Text>
+
+          <Text style={styles.heroDescription}>
+            Dejá de dudar tus respuestas con simulación por voz, preguntas técnicas reales y feedback inmediato para estar 100% preparado en tus procesos de selección.
+          </Text>
+
+          {/* Botón Principal aiApply CTA */}
+          <TouchableOpacity
+            style={styles.mainCtaButton}
+            activeOpacity={0.85}
+            onPress={() => router.push('/(tabs)/interview')}
+          >
+            <Text style={styles.mainCtaText}>Prueba Interview IA ahora</Text>
+            <Feather name="arrow-right" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Racha Diaria y Puntuación Promedio ── */}
+        <View style={styles.metricsRow}>
+          <View style={styles.streakCard}>
+            <View style={styles.streakIconWrap}>
+              <Animated.Text style={[styles.streakFire, { transform: [{ scale: flameScale }] }]}>
+                🔥
+              </Animated.Text>
+            </View>
+            <View style={styles.metricTextContainer}>
+              <Text style={styles.metricLabel} numberOfLines={1}>
+                RACHA
+              </Text>
+              <Text style={styles.streakText} numberOfLines={1} adjustsFontSizeToFit>
+                {streakText}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.scoreMetricCard}>
+            <View style={styles.scoreIconWrap}>
+              <Feather name="award" size={20} color={Colors.primary} />
+            </View>
+            <View style={styles.metricTextContainer}>
+              <Text style={styles.metricLabel} numberOfLines={1}>
+                PROMEDIO
+              </Text>
+              <Text style={styles.scoreText} numberOfLines={1} adjustsFontSizeToFit>
+                {avgScore > 0 ? `${avgScore} / 10` : '—'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Secciones Destacadas (Acceso Directo Sin Sobrecarga) ── */}
+        <Text style={styles.sectionTitle}>EXPLORAR HERRAMIENTAS</Text>
+
+        {/* Botón 1: Banco de Preguntas (Accesible desde Home como pidió el usuario) */}
+        <TouchableOpacity
+          style={styles.toolCard}
+          onPress={() => router.push('/(tabs)/questions')}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.toolIconWrap, { backgroundColor: '#EEF2FF' }]}>
+            <Feather name="book-open" size={22} color={Colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={styles.toolTitleRow}>
+              <Text style={styles.toolTitle}>Banco de Preguntas</Text>
+              <View style={styles.newPill}>
+                <Text style={styles.newPillText}>+500 PREGUNTAS</Text>
+              </View>
+            </View>
+            <Text style={styles.toolDescription}>
+              Filtrá por área profesional, habilidades técnicas, blandas y nivel de experiencia.
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={20} color={Colors.textMuted} />
+        </TouchableOpacity>
+
+        {/* Botón 2: Búsqueda y Postulación IA a Empleos (aiApply style) */}
+        <TouchableOpacity
+          style={styles.toolCard}
+          onPress={() => router.push('/(tabs)/jobs')}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.toolIconWrap, { backgroundColor: '#FDF4FF' }]}>
+            <Feather name="briefcase" size={22} color={Colors.accentPink} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={styles.toolTitleRow}>
+              <Text style={styles.toolTitle}>Búsqueda y Postulación</Text>
+              <View style={[styles.newPill, { backgroundColor: '#FCE7F3' }]}>
+                <Text style={[styles.newPillText, { color: '#BE185D' }]}>MATCH</Text>
+              </View>
+            </View>
+            <Text style={styles.toolDescription}>
+              Cuestionario inteligente y links directos a vacantes en LinkedIn, Computrabajo e Indeed.
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={20} color={Colors.textMuted} />
+        </TouchableOpacity>
+
+        {/* Botón 3: Simulacro Técnico Rápido */}
+        <TouchableOpacity
+          style={styles.toolCard}
+          onPress={() => router.push('/(tabs)/interview')}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.toolIconWrap, { backgroundColor: '#ECFDF5' }]}>
+            <Feather name="mic" size={22} color={Colors.success} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.toolTitle}>Simulacro con Voz y Cronómetro</Text>
+            <Text style={styles.toolDescription}>
+              Respondé hablando o escribiendo y recibí feedback instantáneo.
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={20} color={Colors.textMuted} />
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -62,29 +257,277 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  container: {
+  scroll: {
     flex: 1,
-    padding: Spacing.lg,
-    justifyContent: 'center',
   },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
+  scrollContent: {
+    padding: Spacing.md,
     gap: Spacing.md,
-    shadowColor: Colors.textPrimary,
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    paddingBottom: Spacing.xxl,
   },
-  title: {
-    fontSize: FontSize.xl,
+
+  // --- Top Bar ---
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  logoText: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: Colors.primary,
+    letterSpacing: -0.5,
+  },
+  logoSparkle: {
+    fontSize: 16,
+    color: Colors.accentPink,
+    fontWeight: '900',
+  },
+  avatarButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  avatarButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: FontSize.md,
+  },
+
+  // --- Rating Pill ---
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+    borderRadius: BorderRadius.full,
+    gap: 6,
+    marginTop: 8,
+  },
+  ratingLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#065F46',
+  },
+  starsRow: {
+    flexDirection: 'row',
+  },
+  ratingNumber: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#047857',
+  },
+
+  // --- Hero Section ---
+  heroSection: {
+    alignItems: 'center',
+    textAlign: 'center',
+    paddingVertical: Spacing.md,
+    gap: 12,
+  },
+  heroHeading: {
+    fontSize: 29,
+    fontWeight: '900',
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    lineHeight: 38,
+    letterSpacing: -0.5,
+  },
+  heroHeadingHighlight: {
+    color: Colors.accentPink,
+  },
+  heroSubhead: {
+    fontSize: FontSize.md,
     fontWeight: '700',
     color: Colors.textPrimary,
+    textAlign: 'center',
   },
-  subtitle: {
+  heroDescription: {
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 8,
+  },
+  mainCtaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+    borderRadius: BorderRadius.full,
+    width: '100%',
+    maxWidth: 360,
+    marginTop: 8,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 4,
+  },
+  mainCtaText: {
+    fontSize: FontSize.md,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+
+  // --- Métricas ---
+  metricsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+  },
+  streakCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    borderRadius: BorderRadius.xl,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    overflow: 'hidden',
+  },
+  metricTextContainer: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+  streakIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FFEDD5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  streakFire: {
+    fontSize: 20,
+  },
+  metricLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: Colors.textSecondary,
+    letterSpacing: 0.5,
+  },
+  streakText: {
+    fontSize: FontSize.md,
+    fontWeight: '800',
+    color: '#C2410C',
+    marginTop: 2,
+  },
+  scoreMetricCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.xl,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
+    overflow: 'hidden',
+  },
+  scoreIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreText: {
+    fontSize: FontSize.md,
+    fontWeight: '800',
+    color: Colors.primaryDark,
+    marginTop: 2,
+  },
+
+  // --- Herramientas ---
+  sectionTitle: {
+    fontSize: FontSize.xs,
+    fontWeight: '800',
+    color: Colors.textSecondary,
+    letterSpacing: 0.8,
+    marginTop: 8,
+    marginLeft: 4,
+  },
+  toolCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: Colors.surface,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  toolIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toolTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  toolTitle: {
+    fontSize: FontSize.md,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+  },
+  newPill: {
+    backgroundColor: '#E0E7FF',
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: BorderRadius.full,
+  },
+  newPillText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: Colors.primaryDark,
+  },
+  toolDescription: {
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    marginTop: 4,
+    lineHeight: 18,
   },
 });

@@ -79,35 +79,44 @@ export default function RegisterScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <View style={styles.header}>
-            <Text style={styles.title}>Crea tu cuenta</Text>
-            <Text style={styles.subtitle}>Completa los datos para registrarte</Text>
-          </View>
-
+          
           <View style={styles.card}>
-            <AppInput label="Nombre" value={name} onChangeText={setName} autoCapitalize="words" error={errors.name} />
-            <AppInput
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              error={errors.email}
-            />
-            <AppInput label="Contraseña" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" error={errors.password} />
-            <AppInput label="Confirmar contraseña" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry autoCapitalize="none" error={errors.confirmPassword} />
+            <View style={styles.header}>
+              <Text style={styles.title}>Creá tu cuenta</Text>
+              <Text style={styles.subtitle}>Empezá a prepararte hoy</Text>
+            </View>
 
-            {/* Ternario para error de formulario */}
-            {formError ? <Text style={styles.formError}>{formError}</Text> : null}
+            <View style={styles.formContainer}>
+              <AppInput label="Nombre completo" placeholder="Tu nombre" value={name} onChangeText={setName} autoCapitalize="words" error={errors.name} />
+              <AppInput
+                label="Correo electrónico"
+                placeholder="vos@ejemplo.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                error={errors.email}
+              />
+              <AppInput label="Contraseña" placeholder="Mínimo 6 caracteres" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" error={errors.password} />
+              <AppInput label="Confirmar contraseña" placeholder="Mínimo 6 caracteres" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry autoCapitalize="none" error={errors.confirmPassword} />
+              
+              {formError ? <Text style={styles.formError}>{formError}</Text> : null}
 
-            <AppButton title="Crear cuenta" onPress={handleRegister} isLoading={isSubmitting} />
+              <AppButton title="Crear cuenta" onPress={handleRegister} isLoading={isSubmitting} style={styles.submitButton} />
+            </View>
+            
+            <Text style={styles.termsText}>
+              Al registrarte aceptás nuestros{'\n'}
+              <Text style={styles.termsLink}>términos y política de privacidad</Text>
+            </Text>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>¿Ya tienes cuenta?</Text>
-              <Link href="/login" style={styles.link}>Inicia sesión</Link>
+              <Text style={styles.footerText}>¿Ya tenés cuenta?</Text>
+              <Link href="/login" style={styles.link}>Iniciá sesión</Link>
             </View>
           </View>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -118,23 +127,45 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: Colors.background },
   flex: { flex: 1 },
   container: { padding: Spacing.lg, flexGrow: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { marginBottom: Spacing.lg, alignItems: 'center', width: '100%', maxWidth: 420 },
-  title: { fontSize: FontSize.xxl, fontWeight: '700', color: Colors.textPrimary },
-  subtitle: { marginTop: Spacing.sm, fontSize: FontSize.sm, color: Colors.textSecondary },
+  
   card: {
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    shadowColor: Colors.textPrimary,
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    padding: Spacing.xl,
     width: '100%',
-    maxWidth: 420,
+    maxWidth: 440,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
-  formError: { color: Colors.error, marginBottom: Spacing.sm, textAlign: 'center' },
-  footer: { marginTop: Spacing.md, flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  footerText: { color: Colors.textSecondary, fontSize: FontSize.sm },
-  link: { color: Colors.primary, fontWeight: '600', fontSize: FontSize.sm },
+  
+  header: { paddingHorizontal: 4, paddingBottom: 24 },
+  title: { fontSize: 26, fontWeight: '800', color: Colors.textPrimary, marginBottom: 4 },
+  subtitle: { fontSize: FontSize.sm, color: Colors.textSecondary },
+  
+  formContainer: { gap: 4 },
+  
+  submitButton: { marginTop: 8 },
+  
+  formError: { color: Colors.error, marginBottom: Spacing.sm, textAlign: 'center', fontWeight: '600' },
+  
+  termsText: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginTop: 18,
+    lineHeight: 18,
+  },
+  termsLink: {
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  
+  footer: { marginTop: 20, flexDirection: 'row', justifyContent: 'center', gap: 6, alignItems: 'center' },
+  footerText: { color: Colors.textSecondary, fontSize: 14 },
+  link: { color: Colors.primary, fontWeight: '700', fontSize: 14 },
 });

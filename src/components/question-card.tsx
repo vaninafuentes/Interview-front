@@ -1,43 +1,26 @@
 /**
  * src/components/question-card.tsx
  * ---------------------------------
- * Tarjeta reutilizable para mostrar una pregunta de entrevista.
- *
- * Patrón: Componente Composable (Composición por Props)
- * ------------------------------------------------------
- * Recibe la `question` como prop y la renderiza.
- * No sabe cómo se obtuvo la pregunta (eso lo sabe el hook).
- * No maneja ningún estado propio.
- *
- * La propiedad `onPress` es opcional: si no se pasa, la card no es presionable.
- * → Condicional con && para renderizar el wrapper correcto
- *
- * Uso:
- * ```tsx
- * <QuestionCard
- *   question={item}
- *   onPress={() => navigate(`/questions/${item.id}`)}
- * />
- * ```
+ * Tarjeta para mostrar una pregunta en el banco interactivo.
  */
 
+import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { Question, QuestionDifficulty } from '@/src/domain/question';
 import { Colors, Spacing, FontSize, BorderRadius } from '@/src/theme';
+import { Feather } from '@expo/vector-icons';
 
 type QuestionCardProps = {
   question: Question;
   onPress?: (question: Question) => void;
 };
 
-/** Mapeo de dificultad → color de badge (programación funcional: objeto como lookup table) */
 const DIFFICULTY_COLOR: Record<QuestionDifficulty, string> = {
   EASY: Colors.difficultyEasy,
   MEDIUM: Colors.difficultyMedium,
   HARD: Colors.difficultyHard,
 };
 
-/** Mapeo de dificultad → texto en español */
 const DIFFICULTY_LABEL: Record<QuestionDifficulty, string> = {
   EASY: 'Fácil',
   MEDIUM: 'Media',
@@ -52,8 +35,10 @@ export const QuestionCard = ({ question, onPress }: QuestionCardProps) => {
     <View style={styles.card}>
       {/* Header: categoría + badge de dificultad */}
       <View style={styles.header}>
-        <Text style={styles.category}>{question.category}</Text>
-        <View style={[styles.difficultyBadge, { backgroundColor: difficultyColor + '22' }]}>
+        <View style={styles.categoryBadge}>
+          <Text style={styles.category}>{question.category}</Text>
+        </View>
+        <View style={[styles.difficultyBadge, { backgroundColor: difficultyColor + '20', borderColor: difficultyColor }]}>
           <Text style={[styles.difficultyText, { color: difficultyColor }]}>
             {difficultyLabel}
           </Text>
@@ -63,14 +48,19 @@ export const QuestionCard = ({ question, onPress }: QuestionCardProps) => {
       {/* Texto de la pregunta */}
       <Text style={styles.questionText}>{question.text}</Text>
 
-      {/* Footer: ID de la pregunta */}
-      <Text style={styles.questionId}>#{question.id}</Text>
+      {/* Footer: ID + Acción rápida */}
+      <View style={styles.footer}>
+        <Text style={styles.questionId}>#{question.id}</Text>
+        <View style={styles.practiceCta}>
+          <Text style={styles.practiceCtaText}>Practicar ahora</Text>
+          <Feather name="arrow-right" size={14} color={Colors.primary} />
+        </View>
+      </View>
     </View>
   );
 
-  // Condicional con ternario: si tiene onPress → TouchableOpacity, sino → View
   return onPress ? (
-    <TouchableOpacity onPress={() => onPress(question)} activeOpacity={0.7} style={styles.wrapper}>
+    <TouchableOpacity onPress={() => onPress(question)} activeOpacity={0.75} style={styles.wrapper}>
       {content}
     </TouchableOpacity>
   ) : (
@@ -80,47 +70,78 @@ export const QuestionCard = ({ question, onPress }: QuestionCardProps) => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: Spacing.sm,
+    marginBottom: 10,
   },
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.md,
     gap: Spacing.sm,
-    shadowColor: Colors.textPrimary,
-    shadowOpacity: 0.06,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.04,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    elevation: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  categoryBadge: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+  },
   category: {
     fontSize: FontSize.xs,
-    fontWeight: '700',
-    color: Colors.primary,
+    fontWeight: '800',
+    color: Colors.primaryDark,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   difficultyBadge: {
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: BorderRadius.full,
+    borderWidth: 1,
   },
   difficultyText: {
     fontSize: FontSize.xs,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   questionText: {
     fontSize: FontSize.md,
+    fontWeight: '700',
     color: Colors.textPrimary,
     lineHeight: 22,
+    marginVertical: 4,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
   },
   questionId: {
     fontSize: FontSize.xs,
     color: Colors.textMuted,
+    fontWeight: '600',
+  },
+  practiceCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  practiceCtaText: {
+    fontSize: FontSize.xs,
+    fontWeight: '800',
+    color: Colors.primaryDark,
   },
 });

@@ -1,67 +1,69 @@
 /**
  * src/theme/index.ts
  * ------------------
- * Sistema de diseño central de la aplicación.
+ * Sistema de diseño central de la aplicación — Dark Mode Pro High-Tech.
  *
- * Capa: THEME
- * -----------
- * Define los tokens de diseño: colores, tipografía y espaciado.
- * Todos los componentes y screens importan sus valores desde acá.
- * Nunca hardcodees colores o tamaños directamente en componentes.
- *
- * Con NativeWind (Tailwind), estos valores también se definen en
- * tailwind.config.js para usarlos como clases CSS.
+ * Paleta moderna de alto contraste, legible y estética:
+ *   - Background: Obsidian Space Slate (#0B0F19)
+ *   - Superficies: Dark Slate (#111827 / #1E293B)
+ *   - Acentos: Electric Amber & Gold Flame (#F59E0B / #FBBF24)
+ *   - Tipografía: Blanco puro (#FFFFFF) y Slate (#94A3B8)
  */
 
 export const Colors = {
-  /** Colores de marca */
-  primary: '#0a7ea4',
-  primaryLight: '#38bdf8',
-  primaryDark: '#0369a1',
+  /** Colores de marca aiApply: Índigo / Violeta vibrante */
+  primary: '#6366F1',
+  primaryLight: '#818CF8',
+  primaryDark: '#4F46E5',
+  primaryGlow: 'rgba(99, 102, 241, 0.15)',
+  accentPink: '#EC4899',
+  accentPurple: '#8B5CF6',
 
-  /** Backgrounds */
-  background: '#f8fafc',
-  surface: '#ffffff',
-  surfaceAlt: '#f1f5f9',
+  /** Backgrounds limpios estilo aiApply (lavanda suave y blanco puro) */
+  background: '#F8F7FF',
+  surface: '#FFFFFF',
+  surfaceAlt: '#F1EFFF',
+  surfaceElevated: '#FFFFFF',
 
-  /** Texto */
-  textPrimary: '#0f172a',
-  textSecondary: '#64748b',
-  textMuted: '#94a3b8',
+  /** Tipografía de alto contraste sobre fondo claro */
+  textPrimary: '#111827',
+  textSecondary: '#4B5563',
+  textMuted: '#9CA3AF',
 
-  /** Estados */
-  error: '#ef4444',
-  errorLight: '#fee2e2',
-  success: '#22c55e',
-  successLight: '#dcfce7',
-  warning: '#f59e0b',
-  warningLight: '#fef3c7',
+  /** Estados y alertas */
+  error: '#EF4444',
+  errorLight: '#FEF2F2',
+  success: '#10B981',
+  successLight: '#ECFDF5',
+  warning: '#F59E0B',
+  warningLight: '#FFFBEB',
 
-  /** Bordes */
-  border: '#e2e8f0',
-  borderFocus: '#0a7ea4',
+  /** Bordes sutiles y estados activos */
+  border: '#E5E7EB',
+  borderLight: '#F3F4F6',
+  borderFocus: '#6366F1',
 
   /** Dificultad de preguntas */
-  difficultyEasy: '#22c55e',
-  difficultyMedium: '#f59e0b',
-  difficultyHard: '#ef4444',
+  difficultyEasy: '#10B981',
+  difficultyMedium: '#F59E0B',
+  difficultyHard: '#EF4444',
 
-  /** Esquemas light/dark para useThemeColor */
+  /** Esquemas para useThemeColor */
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: '#0a7ea4',
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: '#0a7ea4',
+    text: '#111827',
+    background: '#F8F7FF',
+    tint: '#6366F1',
+    icon: '#6B7280',
+    tabIconDefault: '#9CA3AF',
+    tabIconSelected: '#6366F1',
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: '#fff',
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: '#fff',
+    text: '#111827',
+    background: '#F8F7FF',
+    tint: '#6366F1',
+    icon: '#6B7280',
+    tabIconDefault: '#9CA3AF',
+    tabIconSelected: '#6366F1',
   },
 } as const;
 
@@ -81,7 +83,7 @@ export const FontSize = {
   lg: 20,
   xl: 24,
   xxl: 28,
-  xxxl: 32,
+  xxxl: 36,
 } as const;
 
 export const BorderRadius = {

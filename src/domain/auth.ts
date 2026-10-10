@@ -16,6 +16,8 @@ export type User = {
   id: string;
   name: string;
   email: string;
+  role?: string;
+  bio?: string;
 };
 
 export type AuthSession = {
@@ -49,5 +51,6 @@ export type AuthContextValue = {
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (updatedFields: Partial<User>) => Promise<void>;
 };
 

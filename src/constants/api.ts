@@ -54,4 +54,16 @@ export const API_ENDPOINTS = {
     /** POST /api/auth/register */
     register: '/api/auth/register',
   },
+  interview: {
+    /** POST /api/interview/generate → genera preguntas con Groq AI */
+    generate: '/api/interview/generate',
+    /** POST /api/interview/evaluate → evalúa la respuesta del usuario con Groq AI */
+    evaluate: '/api/interview/evaluate',
+    /** GET /api/interview/history → historial de sesiones */
+    history: '/api/interview/history',
+    /** GET /api/interview/stats → estadísticas de práctica y racha */
+    stats: '/api/interview/stats',
+    /** POST /api/interview/hint → pista para una pregunta */
+    hint: '/api/interview/hint',
+  },
 } as const;

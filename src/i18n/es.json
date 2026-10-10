@@ -33,5 +33,29 @@
     "loading": "Cargando...",
     "error": "Error",
     "back": "Volver"
+  },
+  "interview": {
+    "title": "Práctica de Entrevista",
+    "subtitle": "Respondé como si fuera una entrevista real",
+    "question_of": "Pregunta {{current}} de {{total}}",
+    "type_answer": "Escribí tu respuesta aquí...",
+    "send": "Enviar respuesta",
+    "listening": "Escuchando...",
+    "tap_to_speak": "Tocar para hablar",
+    "stop_recording": "Detener grabación",
+    "evaluating": "La IA está evaluando tu respuesta...",
+    "your_score": "Tu puntuación",
+    "feedback_title": "Feedback del entrevistador",
+    "tips_title": "Consejos para mejorar",
+    "next_question": "Siguiente pregunta",
+    "finish": "Terminar práctica",
+    "session_complete": "¡Práctica completada!",
+    "session_complete_msg": "Respondiste {{count}} preguntas. ¡Buen trabajo!",
+    "start_over": "Practicar de nuevo",
+    "go_home": "Volver al inicio",
+    "try_again": "Reintentar",
+    "no_questions": "No hay preguntas disponibles",
+    "no_questions_msg": "Volvé a intentar más tarde.",
+    "error_evaluating": "Error al evaluar la respuesta"
   }
 }
