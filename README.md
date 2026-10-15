@@ -205,3 +205,55 @@ URL base configurada en `src/constants/api.ts`:
 - **Web:** `http://localhost:8080`
 - **Expo Go (dispositivo físico o emulador):** la IP se detecta automáticamente desde Metro (`Constants.expoConfig.hostUri`); la PC y el celular deben estar en la misma red WiFi
 - **Fallback sin Expo Go:** emulador Android `http://10.0.2.2:8080`, iOS Simulator `http://localhost:8080`
+
+---
+
+## 🔑 Configurar el backend
+
+Para correr `Interview-back` hacen falta dos cosas: **MySQL** y una **API key de Groq**.
+La primera es obligatoria para que arranque; la segunda, para que funcionen las
+funciones de IA.
+
+### 1. Base de datos (MySQL)
+
+El backend espera MySQL en el puerto **3307** (no en el 3306 por defecto) y crea
+la base `interviewai_db` sola, sin scripts SQL manuales.
+
+```bash
+docker run -d --name interview-mysql -p 3307:3306 \
+  -e MYSQL_ROOT_PASSWORD=root \
+  mysql:8
+```
+
+Al arrancar por primera vez, Hibernate crea las tablas (`ddl-auto=update`) y un
+seeder inserta el banco de preguntas inicial (22 preguntas de 8 rubros distintos).
+
+### 2. API key de Groq (para las funciones de IA)
+
+La generación de preguntas, la evaluación de respuestas y el análisis de CV usan
+[Groq](https://console.groq.com), que tiene plan gratuito.
+
+1. Sacá una key gratis en **https://console.groq.com/keys**
+2. Definila como variable de entorno `GROQ_API_KEY`:
+
+**IntelliJ IDEA** — recomendado, queda guardada entre reinicios:
+```
+Run → Edit Configurations… → Environment variables → GROQ_API_KEY=gsk_...
+```
+
+**PowerShell** — ojo, solo dura esa terminal:
+```powershell
+$env:GROQ_API_KEY = "gsk_tu_api_key_aqui"
+```
+
+> ⚠️ **La key nunca se commitea.** `application.properties` la lee con
+> `${GROQ_API_KEY:NOT_CONFIGURED}`, así que si no está definida el backend
+> **arranca igual**: el resto de la app funciona y las funciones de IA avisan
+> que no están disponibles, en vez de fallar o inventar datos.
+
+### 3. Variables opcionales
+
+| Variable | Default | Para qué |
+|---|---|---|
+| `JWT_SECRET` | valor de desarrollo en `application.properties` | Firma de los tokens JWT. **Cambiarlo invalida los tokens ya emitidos** (hay que volver a iniciar sesión). En producción hay que definirlo con un valor propio. |
+| `groq.model` | `qwen/qwen3.8-27b` | Modelo de Groq a usar. Está en `application.properties` para poder cambiarlo sin recompilar, porque Groq retira modelos de su tier Preview cada tanto. |
