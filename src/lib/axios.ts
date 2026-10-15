@@ -26,6 +26,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '@/src/constants/api';
 import { authEvents } from '@/src/lib/auth-events';
+import i18n from '@/src/i18n';
 
 const AUTH_STORAGE_KEY = 'auth-session';
 
@@ -52,7 +53,7 @@ axiosClient.interceptors.request.use(
         const session = JSON.parse(stored);
         if (session?.token) {
           config.headers.Authorization = `Bearer ${session.token}`;
-          console.log(`[Axios] JWT adjuntado | ${config.method?.toUpperCase()} ${config.url} | token: ${session.token.substring(0, 20)}...`);
+          console.log(`[Axios] JWT adjuntado | ${config.method?.toUpperCase()} ${config.url}`);
         } else {
           console.warn(`[Axios] Sesión en storage pero sin token | ${config.url}`);
         }
@@ -100,10 +101,10 @@ axiosClient.interceptors.response.use(
         return Promise.reject(new Error(backendMessage));
       }
       // Fallback: mostrar el status
-      return Promise.reject(new Error(`Error del servidor (${status})`));
+      return Promise.reject(new Error(i18n.t('common.error_server', { status })));
     } else if (error.request) {
       console.error('[Axios] Sin respuesta del servidor (red caída o backend apagado):', error.message);
-      return Promise.reject(new Error('No se pudo conectar con el servidor. Verificá tu conexión.'));
+      return Promise.reject(new Error(i18n.t('common.error_network')));
     }
     return Promise.reject(error);
   }

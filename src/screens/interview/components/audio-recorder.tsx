@@ -10,11 +10,11 @@
  * dictar usando el micrófono nativo del teclado del celular (Apple / Gboard).
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTranslation } from 'react-i18next';
 import { Colors, FontSize, BorderRadius, Spacing } from '@/src/theme';
 import { SoundwaveVisualizer } from './soundwave-visualizer';
+import { useTranslation } from 'react-i18next';
 
 let ExpoSpeechRecognitionModule: any = null;
 let useSpeechRecognitionEvent: any = null;
@@ -100,12 +100,12 @@ export const AudioRecorder = ({ onTranscriptReady, disabled = false }: AudioReco
       <View style={styles.dictationGuideCard}>
         <View style={styles.dictationIconRow}>
           <Text style={styles.dictationEmoji}>🎙️</Text>
-          <Text style={styles.dictationTitle}>¿Querés responder hablando?</Text>
+          <Text style={styles.dictationTitle}>{t('interview.dictation_title')}</Text>
         </View>
         <Text style={styles.dictationDesc}>
-          Tocá el cuadro de texto y pulsá el ícono de micrófono{' '}
-          <Text style={styles.dictationHighlight}>[ 🎙️ ]</Text> en tu teclado móvil para dictar tu
-          respuesta con el reconocedor de voz nativo.
+          {t('interview.dictation_desc_prefix')}{' '}
+          <Text style={styles.dictationHighlight}>[ 🎙️ ]</Text>{' '}
+          {t('interview.dictation_desc_suffix')}
         </Text>
       </View>
     );
@@ -130,14 +130,12 @@ export const AudioRecorder = ({ onTranscriptReady, disabled = false }: AudioReco
       <SoundwaveVisualizer isRecording={isRecording} />
 
       <Text style={[styles.label, isRecording && { color: Colors.primaryLight }]}>
-        {isRecording
-          ? t('interview.stop_recording', 'Escuchando... Tocá para pausar')
-          : t('interview.tap_to_speak', 'Tocar para responder por voz')}
+        {isRecording ? t('interview.stop_recording') : t('interview.tap_to_speak')}
       </Text>
 
       {isRecording && transcript.length > 0 && (
         <Text style={styles.transcript} numberOfLines={2}>
-          "{transcript}"
+          {`"${transcript}"`}
         </Text>
       )}
     </View>

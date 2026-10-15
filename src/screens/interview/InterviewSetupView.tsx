@@ -14,7 +14,7 @@
 import type { InterviewSetupConfig } from '@/src/domain/interview';
 import { BorderRadius, Colors, FontSize, Spacing } from '@/src/theme';
 import { Feather } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -25,6 +25,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+import { BackButton } from '@/src/components/back-button';
 
 type CategoryInfo = {
   id: string;
@@ -43,63 +45,6 @@ type CategoryInfo = {
   features: string[];
 };
 
-const CATEGORIES: CategoryInfo[] = [
-  {
-    id: 'technical',
-    badge: 'CONOCIMIENTOS CLAVE',
-    badgeColor: '#4F46E5',
-    badgeBg: '#EEF2FF',
-    title: 'Entrevista por puesto / rol',
-    desc: 'Preguntas sobre responsabilidades del puesto, herramientas clave, casos prácticos y resolución de problemas cotidianos.',
-    icon: 'briefcase',
-    iconColor: '#6366F1',
-    iconBg: '#EEF2FF',
-    defaultTopic: 'Atención al Cliente y Ventas',
-    defaultCount: 8,
-    defaultDiff: 'MEDIUM',
-    quickTopics: ['Ventas y Comercial', 'Administración', 'Atención al Cliente', 'Marketing Digital', 'Recursos Humanos', 'Tecnología / IT'],
-    features: ['Feedback inmediato', 'Respuesta modelo sugerida', 'Casos prácticos del rol'],
-  },
-  {
-    id: 'behavioral',
-    badge: 'COMPETENCIAS',
-    badgeColor: '#BE185D',
-    badgeBg: '#FDF4FF',
-    title: 'Habilidades blandas y conducta',
-    desc: 'Situaciones de trabajo en equipo, resolución de conflictos, adaptabilidad, comunicación asertiva y toma de decisiones.',
-    icon: 'users',
-    iconColor: '#EC4899',
-    iconBg: '#FDF4FF',
-    defaultTopic: 'Liderazgo y trabajo en equipo',
-    defaultCount: 5,
-    defaultDiff: 'MEDIUM',
-    quickTopics: ['Trabajo en equipo', 'Resolución de conflictos', 'Liderazgo', 'Presión y plazos', 'Comunicación asertiva'],
-    features: ['Resolución de conflictos', 'Comunicación asertiva', 'Claridad al responder'],
-  },
-  {
-    id: 'mock',
-    badge: 'SIMULACIÓN INTEGRAL',
-    badgeColor: '#047857',
-    badgeBg: '#ECFDF5',
-    title: 'Simulacro de entrevista completa',
-    desc: 'Simulación integral de un proceso de selección: preguntas del puesto + preguntas de comportamiento con reporte final de desempeño.',
-    icon: 'award',
-    iconColor: '#10B981',
-    iconBg: '#ECFDF5',
-    defaultTopic: 'Puesto a elección',
-    defaultCount: 10,
-    defaultDiff: 'HARD',
-    quickTopics: ['Área Comercial', 'Administración / Finanzas', 'Coordinación de Equipo', 'Profesional Técnico'],
-    features: ['Evaluación integral', 'Reporte con puntaje', 'Tiempo cronometrado'],
-  },
-];
-
-const DIFFICULTIES = [
-  { label: 'Fácil', value: 'EASY', color: Colors.difficultyEasy, bg: '#ECFDF5' },
-  { label: 'Medio', value: 'MEDIUM', color: Colors.difficultyMedium, bg: '#FFFBEB' },
-  { label: 'Difícil', value: 'HARD', color: Colors.difficultyHard, bg: '#FEF2F2' },
-];
-
 const COUNTS = [5, 8, 10];
 
 type Props = {
@@ -117,6 +62,102 @@ export const InterviewSetupView = ({
   hasActiveSession,
   onResume,
 }: Props) => {
+  const { t } = useTranslation();
+
+  // Dataset de categorías: definido dentro del componente para poder usar t()
+  const CATEGORIES = useMemo<CategoryInfo[]>(
+    () => [
+      {
+        id: 'technical',
+        badge: t('setup.cat_technical_badge'),
+        badgeColor: '#4F46E5',
+        badgeBg: '#EEF2FF',
+        title: t('setup.cat_technical_title'),
+        desc: t('setup.cat_technical_desc'),
+        icon: 'briefcase',
+        iconColor: '#6366F1',
+        iconBg: '#EEF2FF',
+        defaultTopic: t('setup.cat_technical_default_topic'),
+        defaultCount: 8,
+        defaultDiff: 'MEDIUM',
+        quickTopics: [
+          t('setup.cat_technical_qt_1'),
+          t('setup.cat_technical_qt_2'),
+          t('setup.cat_technical_qt_3'),
+          t('setup.cat_technical_qt_4'),
+          t('setup.cat_technical_qt_5'),
+          t('setup.cat_technical_qt_6'),
+        ],
+        features: [
+          t('setup.cat_technical_feat_1'),
+          t('setup.cat_technical_feat_2'),
+          t('setup.cat_technical_feat_3'),
+        ],
+      },
+      {
+        id: 'behavioral',
+        badge: t('setup.cat_behavioral_badge'),
+        badgeColor: '#BE185D',
+        badgeBg: '#FDF4FF',
+        title: t('setup.cat_behavioral_title'),
+        desc: t('setup.cat_behavioral_desc'),
+        icon: 'users',
+        iconColor: '#EC4899',
+        iconBg: '#FDF4FF',
+        defaultTopic: t('setup.cat_behavioral_default_topic'),
+        defaultCount: 5,
+        defaultDiff: 'MEDIUM',
+        quickTopics: [
+          t('setup.cat_behavioral_qt_1'),
+          t('setup.cat_behavioral_qt_2'),
+          t('setup.cat_behavioral_qt_3'),
+          t('setup.cat_behavioral_qt_4'),
+          t('setup.cat_behavioral_qt_5'),
+        ],
+        features: [
+          t('setup.cat_behavioral_feat_1'),
+          t('setup.cat_behavioral_feat_2'),
+          t('setup.cat_behavioral_feat_3'),
+        ],
+      },
+      {
+        id: 'mock',
+        badge: t('setup.cat_mock_badge'),
+        badgeColor: '#047857',
+        badgeBg: '#ECFDF5',
+        title: t('setup.cat_mock_title'),
+        desc: t('setup.cat_mock_desc'),
+        icon: 'award',
+        iconColor: '#10B981',
+        iconBg: '#ECFDF5',
+        defaultTopic: t('setup.cat_mock_default_topic'),
+        defaultCount: 10,
+        defaultDiff: 'HARD',
+        quickTopics: [
+          t('setup.cat_mock_qt_1'),
+          t('setup.cat_mock_qt_2'),
+          t('setup.cat_mock_qt_3'),
+          t('setup.cat_mock_qt_4'),
+        ],
+        features: [
+          t('setup.cat_mock_feat_1'),
+          t('setup.cat_mock_feat_2'),
+          t('setup.cat_mock_feat_3'),
+        ],
+      },
+    ],
+    [t]
+  );
+
+  const DIFFICULTIES = useMemo(
+    () => [
+      { label: t('setup.difficulty_easy'), value: 'EASY', color: Colors.difficultyEasy, bg: '#ECFDF5' },
+      { label: t('setup.difficulty_medium'), value: 'MEDIUM', color: Colors.difficultyMedium, bg: '#FFFBEB' },
+      { label: t('setup.difficulty_hard'), value: 'HARD', color: Colors.difficultyHard, bg: '#FEF2F2' },
+    ],
+    [t]
+  );
+
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedCat, setSelectedCat] = useState<CategoryInfo | null>(null);
 
@@ -145,14 +186,15 @@ export const InterviewSetupView = ({
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
           {/* Header con Badge de confianza */}
           <View style={styles.headerArea}>
+            <View style={{ width: '100%', alignItems: 'flex-start', marginBottom: 8 }}>
+              <BackButton />
+            </View>
             <View style={styles.badgePill}>
               <Feather name="zap" size={13} color={Colors.primary} />
-              <Text style={styles.badgePillText}>SIMULADOR DE ENTREVISTAS CON IA</Text>
+              <Text style={styles.badgePillText}>{t('setup.badge_pill')}</Text>
             </View>
-            <Text style={styles.title}>Elegí tu modalidad de práctica</Text>
-            <Text style={styles.subtitle}>
-              Seleccioná qué tipo de entrevista querés simular para recibir feedback especializado e inmediato.
-            </Text>
+            <Text style={styles.title}>{t('setup.title')}</Text>
+            <Text style={styles.subtitle}>{t('setup.subtitle')}</Text>
           </View>
 
           {/* Botón para reanudar si hay sesión activa */}
@@ -162,8 +204,8 @@ export const InterviewSetupView = ({
                 <Feather name="play-circle" size={24} color={Colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.resumeTitle}>Tenés una entrevista en curso</Text>
-                <Text style={styles.resumeSubtitle}>Tocá acá para continuar donde dejaste</Text>
+                <Text style={styles.resumeTitle}>{t('setup.resume_title')}</Text>
+                <Text style={styles.resumeSubtitle}>{t('setup.resume_subtitle')}</Text>
               </View>
               <Feather name="chevron-right" size={20} color={Colors.primary} />
             </TouchableOpacity>
@@ -203,7 +245,7 @@ export const InterviewSetupView = ({
 
                 <View style={styles.optionFooter}>
                   <Text style={[styles.startPromptText, { color: cat.iconColor }]}>
-                    Elegir y configurar
+                    {t('setup.choose_and_configure')}
                   </Text>
                   <View style={[styles.arrowCircle, { backgroundColor: cat.iconBg }]}>
                     <Feather name="arrow-right" size={15} color={cat.iconColor} />
@@ -228,7 +270,7 @@ export const InterviewSetupView = ({
           activeOpacity={0.7}
         >
           <Feather name="arrow-left" size={18} color={Colors.textPrimary} />
-          <Text style={styles.backButtonText}>Cambiar modalidad</Text>
+          <Text style={styles.backButtonText}>{t('setup.change_mode')}</Text>
         </TouchableOpacity>
 
         <View style={styles.step2Header}>
@@ -238,17 +280,17 @@ export const InterviewSetupView = ({
             </Text>
           </View>
           <Text style={styles.title}>{selectedCat?.title}</Text>
-          <Text style={styles.subtitle}>Personalizá las preguntas que la IA va a formular</Text>
+          <Text style={styles.subtitle}>{t('setup.step2_subtitle')}</Text>
         </View>
 
         {/* Tema */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionLabel}>¿Sobre qué tema o rol querés practicar?</Text>
+          <Text style={styles.sectionLabel}>{t('setup.topic_label')}</Text>
           <TextInput
             style={styles.topicInput}
             value={topic}
             onChangeText={setTopic}
-            placeholder="Ej: Ventas, Administración, Atención al cliente, IT..."
+            placeholder={t('setup.topic_placeholder')}
             placeholderTextColor={Colors.textMuted}
             editable={!isGenerating}
           />
@@ -256,7 +298,7 @@ export const InterviewSetupView = ({
           {/* Sugerencias rápidas de 1 toque */}
           {selectedCat?.quickTopics && (
             <View style={styles.quickTopicsContainer}>
-              <Text style={styles.quickTopicsLabel}>Sugerencias rápidas:</Text>
+              <Text style={styles.quickTopicsLabel}>{t('setup.quick_topics_label')}</Text>
               <View style={styles.quickTopicsRow}>
                 {selectedCat.quickTopics.map((qt) => {
                   const isSelected = topic.toLowerCase() === qt.toLowerCase();
@@ -287,7 +329,7 @@ export const InterviewSetupView = ({
 
         {/* Dificultad */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionLabel}>Nivel de exigencia</Text>
+          <Text style={styles.sectionLabel}>{t('setup.difficulty_label')}</Text>
           <View style={styles.pillRow}>
             {DIFFICULTIES.map((d) => {
               const isSelected = difficulty === d.value;
@@ -321,7 +363,7 @@ export const InterviewSetupView = ({
 
         {/* Cantidad */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionLabel}>Cantidad de preguntas</Text>
+          <Text style={styles.sectionLabel}>{t('setup.count_label')}</Text>
           <View style={styles.pillRow}>
             {COUNTS.map((c) => {
               const isSelected = count === c;
@@ -337,7 +379,7 @@ export const InterviewSetupView = ({
                     {c}
                   </Text>
                   <Text style={[styles.countPillSub, isSelected && styles.countPillTextSelected]}>
-                    preguntas
+                    {t('setup.count_unit')}
                   </Text>
                 </TouchableOpacity>
               );
@@ -363,11 +405,11 @@ export const InterviewSetupView = ({
           {isGenerating ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <ActivityIndicator color="#FFFFFF" size="small" />
-              <Text style={styles.ctaText}>Generando preguntas con IA...</Text>
+              <Text style={styles.ctaText}>{t('setup.generating')}</Text>
             </View>
           ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={styles.ctaText}>Comenzar entrevista ahora</Text>
+              <Text style={styles.ctaText}>{t('setup.start_cta')}</Text>
               <Feather name="arrow-right" size={18} color="#FFFFFF" />
             </View>
           )}

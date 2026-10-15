@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { Colors } from '@/src/theme';
+import { useTranslation } from 'react-i18next';
 
 export default function TabsLayout() {
+  const { t } = useTranslation();
+
   return (
     <Tabs
       screenOptions={{
@@ -31,7 +34,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Inicio',
+          title: t('tabs.home'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
           ),
@@ -40,7 +43,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="interview"
         options={{
-          title: 'Simulacro',
+          title: t('tabs.interview'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? 'mic' : 'mic-outline'} size={size} color={color} />
           ),
@@ -49,7 +52,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="jobs"
         options={{
-          title: 'Empleos',
+          title: t('tabs.jobs'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? 'briefcase' : 'briefcase-outline'} size={size} color={color} />
           ),
@@ -58,7 +61,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Perfil',
+          title: t('tabs.profile'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
           ),

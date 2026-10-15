@@ -66,4 +66,8 @@ export const API_ENDPOINTS = {
     /** POST /api/interview/hint → pista para una pregunta */
     hint: '/api/interview/hint',
   },
+  cv: {
+    /** POST /api/cv/analyze → analiza el CV en PDF y extrae rol, seniority, skills y resumen con IA */
+    analyze: '/api/cv/analyze',
+  },
 } as const;

@@ -10,7 +10,7 @@
  *   4. complete   → Scorecard Final con Job Readiness Score y desglose
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -24,16 +24,19 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
 import * as Speech from 'expo-speech';
 import { AudioRecorder } from './components/audio-recorder';
 import { InterviewTimer } from './components/interview-timer';
 import { AiEvaluatingOrb } from './components/ai-evaluating-orb';
 import { Colors, Spacing, FontSize, BorderRadius } from '@/src/theme';
 import { Feather } from '@expo/vector-icons';
-import type { GeneratedQuestion } from '@/src/domain/interview';
-import type { InterviewFeedbackResponse, InterviewSessionState } from '@/src/domain/interview';
+import type {
+  GeneratedQuestion,
+  InterviewFeedbackResponse,
+  InterviewSessionState,
+} from '@/src/domain/interview';
 import type { SessionQuestionResult } from './interview-screen';
+import { useTranslation } from 'react-i18next';
 
 type InterviewViewProps = {
   questions: GeneratedQuestion[];
@@ -158,12 +161,12 @@ export const InterviewView = ({
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <View style={styles.centerContainer}>
           <Text style={styles.emoji}>📋</Text>
-          <Text style={styles.stateTitle}>Sin preguntas disponibles</Text>
+          <Text style={styles.stateTitle}>{t('interview.no_questions')}</Text>
           <Text style={styles.stateMessage}>
-            Elegí una categoría para generar preguntas con IA.
+            {t('interview.no_questions_setup_msg')}
           </Text>
           <TouchableOpacity style={styles.primaryButton} onPress={onStartOver}>
-            <Text style={styles.primaryButtonText}>Configurar simulacro</Text>
+            <Text style={styles.primaryButtonText}>{t('interview.configure_practice')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -181,22 +184,22 @@ export const InterviewView = ({
           ) / 10
         : 8.0;
 
-    let readinessTitle = '🟢 Listo para tu Entrevista Laboral';
+    let readinessTitle = t('interview.readiness_ready_title');
     let readinessBadgeColor: string = Colors.success;
-    let readinessDesc = 'Tu nivel de respuestas demuestra solidez, buena estructura y vocabulario profesional adecuado.';
+    let readinessDesc = t('interview.readiness_ready_desc');
 
     if (avgScore >= 8.5) {
-      readinessTitle = '⭐ Nivel Sobresaliente / Excelente';
+      readinessTitle = t('interview.readiness_excellent_title');
       readinessBadgeColor = Colors.primary;
-      readinessDesc = 'Respuestas sobresalientes con gran claridad conceptual, síntesis y profundidad.';
+      readinessDesc = t('interview.readiness_excellent_desc');
     } else if (avgScore >= 6.5) {
-      readinessTitle = '🚀 Nivel Sólido / Muy Bueno';
+      readinessTitle = t('interview.readiness_solid_title');
       readinessBadgeColor = Colors.warning;
-      readinessDesc = 'Buen dominio de los temas clave. Ajustá ejemplos prácticos y concisión en la comunicación.';
+      readinessDesc = t('interview.readiness_solid_desc');
     } else {
-      readinessTitle = '🟠 Requiere Práctica y Repaso';
+      readinessTitle = t('interview.readiness_practice_title');
       readinessBadgeColor = Colors.error;
-      readinessDesc = 'Recomendamos repasar los conceptos y practicar nuevamente con las respuestas modelo sugeridas.';
+      readinessDesc = t('interview.readiness_practice_desc');
     }
 
     return (
@@ -209,9 +212,9 @@ export const InterviewView = ({
           {/* Header Scorecard */}
           <View style={styles.scorecardHero}>
             <Text style={styles.scorecardEmoji}>🏆</Text>
-            <Text style={styles.scorecardTitle}>Reporte de Rendimiento</Text>
+            <Text style={styles.scorecardTitle}>{t('interview.performance_report')}</Text>
             <Text style={styles.scorecardSubtitle}>
-              Simulacro completado ({totalAnswered} preguntas evaluadas)
+              {t('interview.session_summary', { count: totalAnswered })}
             </Text>
 
             <View style={styles.scorecardBadgeContainer}>
@@ -235,7 +238,7 @@ export const InterviewView = ({
           </View>
 
           {/* Desglose de preguntas respondidas */}
-          <Text style={styles.sectionTitle}>DESGLOSE DE PREGUNTAS</Text>
+          <Text style={styles.sectionTitle}>{t('interview.questions_breakdown')}</Text>
           {sessionResults.map((item, idx) => {
             const isExpanded = expandedResultIndex === idx;
             return (
@@ -268,17 +271,21 @@ export const InterviewView = ({
 
                 {isExpanded && (
                   <View style={styles.resultItemBody}>
-                    <Text style={styles.resultSubLabel}>Tu respuesta:</Text>
+                    <Text style={styles.resultSubLabel}>{t('interview.your_answer')}</Text>
                     <Text style={styles.resultAnswerText}>{item.userAnswer}</Text>
 
-                    <Text style={[styles.resultSubLabel, { marginTop: 12 }]}>Feedback:</Text>
+                    <Text style={[styles.resultSubLabel, { marginTop: 12 }]}>
+                      {t('interview.feedback_label')}
+                    </Text>
                     <Text style={styles.resultFeedbackText}>{item.feedback.feedback}</Text>
 
                     {item.feedback.modelAnswer && (
                       <View style={styles.resultModelCard}>
                         <View style={styles.modelHeader}>
                           <Feather name="award" size={16} color={Colors.primary} />
-                          <Text style={styles.resultModelTitle}>Respuesta Modelo Sugerida:</Text>
+                          <Text style={styles.resultModelTitle}>
+                            {t('interview.model_answer_suggested')}
+                          </Text>
                         </View>
                         <Text style={styles.resultModelText}>{item.feedback.modelAnswer}</Text>
                       </View>
@@ -291,11 +298,11 @@ export const InterviewView = ({
 
           <View style={styles.scorecardActions}>
             <TouchableOpacity style={styles.primaryButton} onPress={onStartOver}>
-              <Text style={styles.primaryButtonText}>Nueva Práctica</Text>
+              <Text style={styles.primaryButtonText}>{t('interview.start_over')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.secondaryButton} onPress={onGoToProfile}>
-              <Text style={styles.secondaryButtonText}>Ver Mi Perfil y Racha</Text>
+              <Text style={styles.secondaryButtonText}>{t('interview.view_profile_streak')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -326,12 +333,15 @@ export const InterviewView = ({
           <View style={styles.header}>
             <TouchableOpacity onPress={onPause} style={styles.pauseButton}>
               <Feather name="arrow-left" size={16} color={Colors.textPrimary} style={{ marginRight: 4 }} />
-              <Text style={styles.pauseButtonText}>Salir</Text>
+              <Text style={styles.pauseButtonText}>{t('interview.exit')}</Text>
             </TouchableOpacity>
 
             <View style={styles.progressPill}>
               <Text style={styles.progressText}>
-                Pregunta {currentIndex + 1} de {questions.length}
+                {t('interview.question_of', {
+                  current: currentIndex + 1,
+                  total: questions.length,
+                })}
               </Text>
             </View>
           </View>
@@ -362,24 +372,24 @@ export const InterviewView = ({
             <View style={styles.timeoutBanner}>
               <View style={styles.timeoutBannerHeader}>
                 <Feather name="alert-circle" size={16} color="#DC2626" />
-                <Text style={styles.timeoutBannerTitle}>¡Tiempo sugerido finalizado!</Text>
+                <Text style={styles.timeoutBannerTitle}>{t('interview.time_up_title')}</Text>
               </View>
               <Text style={styles.timeoutBannerText}>
                 {userAnswer.trim().length > 0
-                  ? 'El tiempo estándar para responder concluyó. Podés enviar tu respuesta ahora a evaluación o tomarte +30s de prórroga para redondearla.'
-                  : 'Se completaron los 2 minutos sugeridos. Podés agregar +30s de prórroga para seguir redactando o pedir una pista orientativa.'}
+                  ? t('interview.time_up_msg_with_answer')
+                  : t('interview.time_up_msg_no_answer')}
               </Text>
               <View style={styles.timeoutBannerActions}>
                 {onAddExtraTime && (
                   <TouchableOpacity style={styles.timeoutExtraBtn} onPress={onAddExtraTime}>
                     <Feather name="clock" size={13} color="#D97706" />
-                    <Text style={styles.timeoutExtraText}>+30s prórroga</Text>
+                    <Text style={styles.timeoutExtraText}>{t('interview.extra_time_30')}</Text>
                   </TouchableOpacity>
                 )}
                 {userAnswer.trim().length > 0 && (
                   <TouchableOpacity style={styles.timeoutSubmitBtn} onPress={onSubmit}>
                     <Feather name="send" size={13} color="#FFFFFF" />
-                    <Text style={styles.timeoutSubmitText}>Enviar ahora</Text>
+                    <Text style={styles.timeoutSubmitText}>{t('interview.send_now')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -412,7 +422,7 @@ export const InterviewView = ({
                   color={Colors.primary}
                 />
                 <Text style={styles.actionIconText}>
-                  {isSpeaking ? 'Silenciar' : 'Escuchar pregunta'}
+                  {isSpeaking ? t('interview.mute') : t('interview.listen_question')}
                 </Text>
               </TouchableOpacity>
 
@@ -428,7 +438,7 @@ export const InterviewView = ({
                   ) : (
                     <Feather name="help-circle" size={16} color={Colors.primary} />
                   )}
-                  <Text style={styles.actionIconText}>Pedir pista</Text>
+                  <Text style={styles.actionIconText}>{t('interview.ask_hint')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -440,7 +450,7 @@ export const InterviewView = ({
               <View style={styles.hintHeader}>
                 <View style={styles.hintTitleRow}>
                   <Feather name="zap" size={16} color={Colors.primary} />
-                  <Text style={styles.hintTitle}>Pista del Entrevistador</Text>
+                  <Text style={styles.hintTitle}>{t('interview.hint_title')}</Text>
                 </View>
                 <TouchableOpacity onPress={onDismissHint} hitSlop={10}>
                   <Feather name="x" size={16} color={Colors.textMuted} />
@@ -457,7 +467,7 @@ export const InterviewView = ({
           {sessionState === 'answering' && (
             <View style={styles.answerSection}>
               <View style={styles.inputHeaderRow}>
-                <Text style={styles.inputHeaderLabel}>TU RESPUESTA</Text>
+                <Text style={styles.inputHeaderLabel}>{t('interview.your_answer_label')}</Text>
                 {isKeyboardVisible && (
                   <TouchableOpacity
                     style={styles.hideKeyboardPill}
@@ -465,7 +475,7 @@ export const InterviewView = ({
                     activeOpacity={0.7}
                   >
                     <Feather name="chevron-down" size={13} color={Colors.primary} />
-                    <Text style={styles.hideKeyboardText}>Ocultar teclado</Text>
+                    <Text style={styles.hideKeyboardText}>{t('interview.hide_keyboard')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -474,7 +484,7 @@ export const InterviewView = ({
                 style={styles.textInput}
                 value={userAnswer}
                 onChangeText={onAnswerChange}
-                placeholder="Escribí tu respuesta acá o usá el micrófono del teclado para dictar..."
+                placeholder={t('interview.answer_placeholder')}
                 placeholderTextColor={Colors.textMuted}
                 multiline
                 textAlignVertical="top"
@@ -488,7 +498,7 @@ export const InterviewView = ({
 
               <View style={styles.orDivider}>
                 <View style={styles.dividerLine} />
-                <Text style={styles.orText}>o responder por voz</Text>
+                <Text style={styles.orText}>{t('interview.or_voice_answer')}</Text>
                 <View style={styles.dividerLine} />
               </View>
 
@@ -499,9 +509,7 @@ export const InterviewView = ({
               />
 
               {isError && (
-                <Text style={styles.errorText}>
-                  Ocurrió un error al evaluar. Por favor intentá nuevamente.
-                </Text>
+                <Text style={styles.errorText}>{t('interview.error_evaluating')}</Text>
               )}
 
               <TouchableOpacity
@@ -514,7 +522,7 @@ export const InterviewView = ({
                 activeOpacity={0.8}
               >
                 <Feather name="send" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
-                <Text style={styles.primaryButtonText}>Enviar para evaluación</Text>
+                <Text style={styles.primaryButtonText}>{t('interview.send_for_evaluation')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -524,7 +532,7 @@ export const InterviewView = ({
           <View style={styles.feedbackSection}>
             {/* Calificación Global */}
             <View style={styles.scoreCard}>
-              <Text style={styles.scoreLabel}>Calificación de la respuesta</Text>
+              <Text style={styles.scoreLabel}>{t('interview.answer_score_label')}</Text>
               <View style={styles.scoreCircle}>
                 <Text style={styles.scoreNumber}>{feedback.score}</Text>
                 <Text style={styles.scoreOutOf}>/10</Text>
@@ -552,10 +560,12 @@ export const InterviewView = ({
               <View style={styles.modelAnswerCard}>
                 <View style={styles.modelAnswerHeader}>
                   <Feather name="award" size={20} color={Colors.primary} />
-                  <Text style={styles.modelAnswerTitle}>Respuesta Modelo Recomendada</Text>
+                  <Text style={styles.modelAnswerTitle}>
+                    {t('interview.model_answer_recommended')}
+                  </Text>
                 </View>
                 <Text style={styles.modelAnswerSubtitle}>
-                  Cómo estructurar una respuesta sólida y convincente para este puesto:
+                  {t('interview.model_answer_subtitle')}
                 </Text>
                 <Text style={styles.modelAnswerContent}>{feedback.modelAnswer}</Text>
               </View>
@@ -564,13 +574,13 @@ export const InterviewView = ({
             {/* Criterios de Evaluación en 5 Ejes */}
             {feedback.criteria && (
               <View style={styles.criteriaCard}>
-                <Text style={styles.sectionTitle}>DESGLOSE POR CRITERIOS</Text>
+                <Text style={styles.sectionTitle}>{t('interview.criteria_breakdown')}</Text>
                 {([
-                  ['Conocimiento técnico', feedback.criteria.technicalKnowledge],
-                  ['Relevancia', feedback.criteria.relevance],
-                  ['Claridad', feedback.criteria.clarity],
-                  ['Comunicación', feedback.criteria.communication],
-                  ['Estructura', feedback.criteria.structure],
+                  [t('interview.criteria_technical'), feedback.criteria.technicalKnowledge],
+                  [t('interview.criteria_relevance'), feedback.criteria.relevance],
+                  [t('interview.criteria_clarity'), feedback.criteria.clarity],
+                  [t('interview.criteria_communication'), feedback.criteria.communication],
+                  [t('interview.criteria_structure'), feedback.criteria.structure],
                 ] as [string, number][]).map(([label, value]) => (
                   <View key={label} style={styles.criteriaRow}>
                     <Text style={styles.criteriaLabel}>{label}</Text>
@@ -600,14 +610,14 @@ export const InterviewView = ({
 
             {/* Resumen */}
             <View style={styles.feedbackCard}>
-              <Text style={styles.sectionTitle}>EVALUACIÓN GENERAL</Text>
+              <Text style={styles.sectionTitle}>{t('interview.feedback_general')}</Text>
               <Text style={styles.feedbackText}>{feedback.feedback}</Text>
             </View>
 
             {/* Fortalezas */}
             {feedback.strengths && feedback.strengths.length > 0 && (
               <View style={styles.strengthsCard}>
-                <Text style={styles.sectionTitle}>✅ FORTALEZAS DESTACADAS</Text>
+                <Text style={styles.sectionTitle}>{t('interview.strengths_title')}</Text>
                 {feedback.strengths.map((item, index) => (
                   <View key={index} style={styles.listItem}>
                     <Text style={styles.listBullet}>•</Text>
@@ -620,7 +630,7 @@ export const InterviewView = ({
             {/* Errores */}
             {feedback.mistakes && feedback.mistakes.length > 0 && (
               <View style={styles.mistakesCard}>
-                <Text style={styles.sectionTitle}>⚠️ PUNTOS A MEJORAR</Text>
+                <Text style={styles.sectionTitle}>{t('interview.improvements_title')}</Text>
                 {feedback.mistakes.map((item, index) => (
                   <View key={index} style={styles.listItem}>
                     <Text style={styles.listBullet}>•</Text>
@@ -633,7 +643,7 @@ export const InterviewView = ({
             {/* Consejos Accionables */}
             {feedback.recommendations && feedback.recommendations.length > 0 && (
               <View style={styles.recommendationsCard}>
-                <Text style={styles.sectionTitle}>💡 CONSEJOS ACCIONABLES</Text>
+                <Text style={styles.sectionTitle}>{t('interview.recommendations_title')}</Text>
                 {feedback.recommendations.map((item, index) => (
                   <View key={index} style={styles.listItem}>
                     <Text style={styles.listBullet}>•</Text>
@@ -646,7 +656,9 @@ export const InterviewView = ({
             {/* Botón siguiente */}
             <TouchableOpacity style={styles.primaryButton} onPress={onNext} activeOpacity={0.8}>
               <Text style={styles.primaryButtonText}>
-                {isLastQuestion ? 'Ver Resultados Finales' : 'Siguiente Pregunta'}
+                {isLastQuestion
+                  ? t('interview.view_final_results')
+                  : t('interview.next_question')}
               </Text>
               <Feather name="arrow-right" size={16} color="#FFFFFF" style={{ marginLeft: 8 }} />
             </TouchableOpacity>

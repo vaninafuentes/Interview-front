@@ -7,11 +7,11 @@
  * No requiere librerías externas ni servidores de audio adicionales.
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTranslation } from 'react-i18next';
 import { Colors, FontSize, BorderRadius, Spacing } from '@/src/theme';
 import { SoundwaveVisualizer } from './soundwave-visualizer';
+import { useTranslation } from 'react-i18next';
 
 type AudioRecorderProps = {
   onTranscriptReady: (text: string) => void;
@@ -99,14 +99,12 @@ export const AudioRecorder = ({ onTranscriptReady, disabled = false }: AudioReco
       <SoundwaveVisualizer isRecording={isRecording} />
 
       <Text style={[styles.label, isRecording && { color: Colors.primaryLight }]}>
-        {isRecording
-          ? t('interview.stop_recording', 'Escuchando... Tocá para pausar')
-          : t('interview.tap_to_speak', 'Tocar para responder por voz')}
+        {isRecording ? t('interview.stop_recording') : t('interview.tap_to_speak')}
       </Text>
 
       {isRecording && transcript.length > 0 && (
         <Text style={styles.transcript} numberOfLines={2}>
-          "{transcript}"
+          {`"${transcript}"`}
         </Text>
       )}
     </View>

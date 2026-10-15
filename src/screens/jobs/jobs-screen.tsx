@@ -3,17 +3,21 @@
  * -----------------------------------
  * Sección de Búsqueda de Empleos y Match Profesional.
  *
- * Mejoras aplicadas:
- *   1. Búsqueda por CV (PDF) con links directos y precisos a LinkedIn, Computrabajo e Indeed.
- *   2. Cuestionario ágil y general (situación laboral, disponibilidad, rol libre y modalidad),
- *      sin encasillar al usuario en categorías rígidas.
- *   3. Campo libre para tipear cualquier profesión o puesto con sugerencias opcionales.
- *   4. URLs de portales corregidas (búsquedas reales verificadas sin truncamiento de palabras).
+ * Flujo:
+ *   1. Subida REAL del CV en PDF → POST /api/cv/analyze (multipart) → la IA extrae
+ *      el rol, el seniority, las skills y un resumen del documento.
+ *   2. Con ese rol real se arman los links a LinkedIn, Computrabajo, Indeed y Bumeran
+ *      + el pitch de postulación.
+ *   3. Alternativa sin CV: cuestionario ágil y general (situación laboral, disponibilidad,
+ *      rol libre y modalidad), sin encasillar al usuario en categorías rígidas. Se resuelve
+ *      localmente, sin llamada a la IA.
+ *   4. Validación local del archivo (PDF y máx. 10 MB) y mensajes de error específicos
+ *      para cada respuesta del backend (400 / 422 / 429 / red).
  *   5. Distinción explícita de vacantes exactas vs. puestos afines / referidos.
  *   6. Botón "Atrás" presente en todas las pantallas.
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   Linking,
@@ -31,38 +35,53 @@ import { useRouter } from 'expo-router';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { Colors, Spacing, FontSize, BorderRadius } from '@/src/theme';
+import { useTranslation } from 'react-i18next';
+import {
+  CV_ALLOWED_MIME_TYPE,
+  CvAnalysisError,
+  MAX_CV_FILE_SIZE_BYTES,
+  type CvUploadFile,
+} from '@/src/data/api/cv-api';
+import { useAnalyzeCv } from '@/src/hooks/use-analyze-cv';
+import { BackButton } from '@/src/components/back-button';
+import type { CvAnalysisResponse } from '@/src/domain/cv';
 
 type QuickSuggestion = {
   title: string;
   tag: string;
 };
 
-const ROLE_SUGGESTIONS: QuickSuggestion[] = [
-  { title: 'Desarrollador Backend', tag: 'Tecnología' },
-  { title: 'Desarrollador Frontend', tag: 'Tecnología' },
-  { title: 'Vendedor / Comercial', tag: 'Ventas' },
-  { title: 'Atención al Cliente', tag: 'Soporte' },
-  { title: 'Analista Administrativo', tag: 'Administración' },
-  { title: 'Diseñador Gráfico / UI', tag: 'Diseño' },
-  { title: 'Recursos Humanos / Selección', tag: 'RRHH' },
-  { title: 'Logística y Depósito', tag: 'Operaciones' },
-];
-
-type UploadedCvInfo = {
-  name: string;
+type UploadedCvInfo = CvUploadFile & {
+  /** Tamaño en bytes informado por el picker (puede faltar en algunos orígenes) */
   size?: number;
-  uri: string;
 };
 
 export default function JobsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
+
+  // Mutación real contra POST /api/cv/analyze (sube el PDF y espera el perfil extraído)
+  const { analyzeCv, isPending: isAnalyzingCv, reset: resetCvAnalysis } = useAnalyzeCv();
+
+  // Sugerencias rápidas de puesto (traducidas al idioma activo)
+  const roleSuggestions: QuickSuggestion[] = [
+    { title: t('jobs.role_developer_backend'), tag: t('jobs.tag_technology') },
+    { title: t('jobs.role_developer_frontend'), tag: t('jobs.tag_technology') },
+    { title: t('jobs.role_sales'), tag: t('jobs.tag_sales') },
+    { title: t('jobs.role_customer_service'), tag: t('jobs.tag_support') },
+    { title: t('jobs.role_admin_analyst'), tag: t('jobs.tag_administration') },
+    { title: t('jobs.role_graphic_designer'), tag: t('jobs.tag_design') },
+    { title: t('jobs.role_hr'), tag: t('jobs.tag_hr') },
+    { title: t('jobs.role_logistics'), tag: t('jobs.tag_operations') },
+  ];
 
   // Estados del flujo: 'intro' | 'cv_upload' | 'quiz' | 'analyzing' | 'results'
   const [stage, setStage] = useState<'intro' | 'cv_upload' | 'quiz' | 'analyzing' | 'results'>('intro');
   const [stageSource, setStageSource] = useState<'cv' | 'quiz'>('quiz');
 
-  // Estado del CV subido
+  // Estado del CV subido y del perfil que devuelve la IA
   const [cvFile, setCvFile] = useState<UploadedCvInfo | null>(null);
+  const [cvAnalysis, setCvAnalysis] = useState<CvAnalysisResponse | null>(null);
   const [customRoleFromCv, setCustomRoleFromCv] = useState('');
 
   // Estado del Cuestionario Ágil
@@ -71,9 +90,6 @@ export default function JobsScreen() {
   const [searchUrgency, setSearchUrgency] = useState('');
   const [targetRole, setTargetRole] = useState('');
   const [workModality, setWorkModality] = useState('');
-
-  // Estado de simulación de análisis IA
-  const [analyzingStep, setAnalyzingStep] = useState(0);
 
   // Copiado de pitch
   const [copiedPitch, setCopiedPitch] = useState(false);
@@ -89,35 +105,84 @@ export default function JobsScreen() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const file = result.assets[0];
         setCvFile({
-          name: file.name,
-          size: file.size,
           uri: file.uri,
+          name: file.name,
+          mimeType: file.mimeType,
+          size: file.size,
+          file: file.file,
         });
 
-        // Autocompletar sugerencia de puesto si el archivo lo menciona
-        const lowerName = file.name.toLowerCase();
-        if (lowerName.includes('backend') && !customRoleFromCv) {
-          setCustomRoleFromCv('Desarrollador Backend');
-        } else if (lowerName.includes('frontend') && !customRoleFromCv) {
-          setCustomRoleFromCv('Desarrollador Frontend');
-        } else if (lowerName.includes('developer') && !customRoleFromCv) {
-          setCustomRoleFromCv('Desarrollador de Software');
-        }
+        // El perfil anterior ya no corresponde al archivo nuevo
+        setCvAnalysis(null);
+        resetCvAnalysis();
       }
     } catch {
-      Alert.alert('Error', 'No se pudo seleccionar el archivo. Por favor reintentá.');
+      Alert.alert(t('common.error'), t('jobs.cv_pick_error'));
     }
   };
 
-  const handleStartCvAnalysis = () => {
+  /** Un archivo es PDF si el picker lo reporta así o si el nombre termina en .pdf */
+  const isPdfFile = (file: UploadedCvInfo) =>
+    file.mimeType === CV_ALLOWED_MIME_TYPE || file.name.toLowerCase().endsWith('.pdf');
+
+  /** Traduce el error del backend a un mensaje accionable para el usuario */
+  const showCvAnalysisError = (error: unknown) => {
+    if (error instanceof CvAnalysisError) {
+      switch (error.code) {
+        // 400 → el archivo no sirve (formato o peso)
+        case 'INVALID_FILE':
+          return Alert.alert(t('common.error'), t('jobs.cv_error_type'));
+        // 422 → el PDF no tiene texto: la IA no puede extraer nada
+        case 'NO_TEXT':
+          return Alert.alert(t('common.error'), t('jobs.cv_error_no_text'));
+        // 429 → la IA está saturada: vale la pena reintentar
+        case 'AI_BUSY':
+          return Alert.alert(t('common.error'), t('jobs.cv_error_ai_busy'));
+        // Red caída, timeout, 401 o 5xx: el interceptor de axios ya tradujo el mensaje
+        case 'NETWORK':
+          return Alert.alert(t('common.error'), error.message || t('jobs.cv_error_analysis'));
+        // 502 (fallo de la IA) y cualquier otro caso
+        default:
+          return Alert.alert(t('common.error'), t('jobs.cv_error_analysis'));
+      }
+    }
+
+    // Error inesperado fuera de la API de CV
+    Alert.alert(
+      t('common.error'),
+      error instanceof Error ? error.message : t('jobs.cv_error_analysis')
+    );
+  };
+
+  const handleStartCvAnalysis = async () => {
     if (!cvFile) {
-      Alert.alert('CV requerido', 'Por favor seleccioná tu currículum en formato PDF antes de continuar.');
+      Alert.alert(t('jobs.cv_required_title'), t('jobs.cv_required_msg'));
+      return;
+    }
+
+    // Validaciones locales: la UI promete un PDF de hasta 10 MB
+    if (!isPdfFile(cvFile)) {
+      Alert.alert(t('common.error'), t('jobs.cv_error_type'));
+      return;
+    }
+    if (cvFile.size !== undefined && cvFile.size > MAX_CV_FILE_SIZE_BYTES) {
+      Alert.alert(t('common.error'), t('jobs.cv_error_size'));
       return;
     }
 
     setStageSource('cv');
     setStage('analyzing');
-    runAnalysisSimulation();
+
+    try {
+      // Llamada real: la IA lee el PDF y devuelve rol, seniority, skills y resumen
+      const analysis = await analyzeCv(cvFile);
+      setCvAnalysis(analysis);
+      setStage('results');
+    } catch (error) {
+      // Volvemos a la pantalla de carga para que el usuario pueda cambiar el CV o reintentar
+      setStage('cv_upload');
+      showCvAnalysisError(error);
+    }
   };
 
   // ── MANEJO DEL CUESTIONARIO ÁGIL ───────────────────────────────────────────
@@ -125,9 +190,9 @@ export default function JobsScreen() {
     if (quizStep < 3) {
       setQuizStep((prev) => prev + 1);
     } else {
+      // El cuestionario se resuelve localmente (links + pitch): mostramos los resultados directo
       setStageSource('quiz');
-      setStage('analyzing');
-      runAnalysisSimulation();
+      setStage('results');
     }
   };
 
@@ -139,21 +204,16 @@ export default function JobsScreen() {
     }
   };
 
-  // ── SIMULACIÓN DE ANÁLISIS IA ──────────────────────────────────────────────
-  const runAnalysisSimulation = () => {
-    setAnalyzingStep(0);
-    setTimeout(() => setAnalyzingStep(1), 500);
-    setTimeout(() => setAnalyzingStep(2), 1100);
-    setTimeout(() => {
-      setStage('results');
-    }, 1700);
-  };
-
   // ── SANITIZACIÓN ROBUSTA DE ROL Y GENERACIÓN DE ENLACES ────────────────────
+  // Rol real detectado por la IA en el CV (vacío mientras no se haya analizado)
+  const cvDetectedRole = cvAnalysis?.role?.trim() || '';
+
+  // Si el usuario escribió un rol a mano, manda su elección; si no, usamos el que
+  // detectó la IA en el CV y, como último recurso, el fallback traducido.
   const rawRole =
     stageSource === 'cv'
-      ? customRoleFromCv.trim() || 'Desarrollador'
-      : targetRole.trim() || 'Desarrollador / Profesional';
+      ? customRoleFromCv.trim() || cvDetectedRole || t('jobs.default_role')
+      : targetRole.trim() || t('jobs.default_role_full');
 
   // Limpieza correcta: solo quitamos caracteres especiales repetidos y espacios
   const cleanRole = rawRole
@@ -164,7 +224,7 @@ export default function JobsScreen() {
   const isRemote =
     stageSource === 'cv'
       ? true
-      : workModality.toLowerCase().includes('remoto');
+      : workModality === t('jobs.modality_remote');
 
   // Enlaces de búsqueda directos y testeados
   const openLinkedInJobs = () => {
@@ -172,39 +232,46 @@ export default function JobsScreen() {
     // Link directo que busca el término exacto en Argentina (o remoto si aplica)
     const remoteParam = isRemote ? '&f_WT=2' : '';
     const url = `https://www.linkedin.com/jobs/search/?keywords=${query}${remoteParam}&location=Argentina`;
-    Linking.openURL(url).catch(() => Alert.alert('Error', 'No se pudo abrir LinkedIn'));
+    Linking.openURL(url).catch(() => Alert.alert(t('common.error'), t('jobs.open_linkedin_error')));
   };
 
   const openComputrabajo = () => {
     const query = encodeURIComponent(cleanRole);
     // Endpoint oficial de búsqueda de Computrabajo Argentina
     const url = `https://www.computrabajo.com.ar/ofertas-de-trabajo/?q=${query}`;
-    Linking.openURL(url).catch(() => Alert.alert('Error', 'No se pudo abrir Computrabajo'));
+    Linking.openURL(url).catch(() => Alert.alert(t('common.error'), t('jobs.open_computrabajo_error')));
   };
 
   const openIndeed = () => {
     const query = encodeURIComponent(cleanRole);
     const url = `https://ar.indeed.com/jobs?q=${query}&l=Argentina`;
-    Linking.openURL(url).catch(() => Alert.alert('Error', 'No se pudo abrir Indeed'));
+    Linking.openURL(url).catch(() => Alert.alert(t('common.error'), t('jobs.open_indeed_error')));
   };
 
   const openBumeran = () => {
     const slug = encodeURIComponent(cleanRole.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
     const url = `https://www.bumeran.com.ar/empleos-busqueda-${slug}.html`;
-    Linking.openURL(url).catch(() => Alert.alert('Error', 'No se pudo abrir Bumeran'));
+    Linking.openURL(url).catch(() => Alert.alert(t('common.error'), t('jobs.open_bumeran_error')));
   };
 
   // Pitch de postulación generado
   const candidatePitch =
     stageSource === 'cv'
-      ? `Hola! Me comunico para postularme a la posición de ${cleanRole}. Adjunto mi CV (${cvFile?.name || 'CV.pdf'}). Cuento con sólida formación, responsabilidad y entusiasmo por aportar valor inmediato al equipo. Me encuentro con disponibilidad y me encantaría coordinar una entrevista. ¡Muchas gracias!`
-      : `Hola! Me pongo en contacto para postularme a la búsqueda de ${cleanRole}. Actualmente me encuentro en ${jobSituation.toLowerCase() || 'búsqueda laboral'}, con interés en modalidad ${workModality.toLowerCase() || 'flexible'}. Me encantaría mantener una breve conversación para contarles cómo puedo sumar al proyecto. ¡Saludos cordiales!`;
+      ? t('jobs.pitch_cv', {
+          role: cleanRole,
+          fileName: cvFile?.name || t('jobs.pitch_cv_file_fallback'),
+        })
+      : t('jobs.pitch_quiz', {
+          role: cleanRole,
+          situation: jobSituation.toLowerCase() || t('jobs.job_situation_fallback'),
+          modality: workModality.toLowerCase() || t('jobs.work_modality_fallback'),
+        });
 
   const handleShareOrCopyPitch = async () => {
     try {
       await Share.share({
         message: candidatePitch,
-        title: 'Pitch de postulación',
+        title: t('jobs.share_pitch_title'),
       });
       setCopiedPitch(true);
       setTimeout(() => setCopiedPitch(false), 3000);
@@ -226,10 +293,11 @@ export default function JobsScreen() {
         >
           {/* Header principal */}
           <View style={styles.headerBar}>
-            <Text style={styles.headerTitle}>Empleos</Text>
-            <Text style={styles.headerSubtitle}>
-              Búsqueda de vacantes y postulaciones adaptadas a tu perfil
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <BackButton />
+              <Text style={styles.headerTitle}>{t('jobs.header_title')}</Text>
+            </View>
+            <Text style={styles.headerSubtitle}>{t('jobs.header_subtitle')}</Text>
           </View>
 
           {/* Opción 1: Subir CV en PDF */}
@@ -243,17 +311,15 @@ export default function JobsScreen() {
                 <Feather name="file-text" size={24} color={Colors.primary} />
               </View>
               <View style={styles.badgePill}>
-                <Text style={styles.badgePillText}>Rápido con IA</Text>
+                <Text style={styles.badgePillText}>{t('jobs.badge_quick_ai')}</Text>
               </View>
             </View>
 
-            <Text style={styles.actionCardTitle}>Subir mi Currículum (PDF)</Text>
-            <Text style={styles.actionCardDesc}>
-              Cargá tu archivo PDF. La IA extraerá tu puesto y te mostrará enlaces directos con vacantes activas y puestos afines en LinkedIn, Computrabajo e Indeed.
-            </Text>
+            <Text style={styles.actionCardTitle}>{t('jobs.upload_cv_title')}</Text>
+            <Text style={styles.actionCardDesc}>{t('jobs.upload_cv_desc')}</Text>
 
             <View style={styles.actionCardCtaRow}>
-              <Text style={styles.actionCardCtaText}>Seleccionar archivo PDF</Text>
+              <Text style={styles.actionCardCtaText}>{t('jobs.select_pdf')}</Text>
               <Feather name="arrow-right" size={16} color={Colors.primary} />
             </View>
           </TouchableOpacity>
@@ -272,18 +338,18 @@ export default function JobsScreen() {
                 <Feather name="edit-3" size={24} color={Colors.accentPink} />
               </View>
               <View style={[styles.badgePill, { backgroundColor: '#FDF2F8' }]}>
-                <Text style={[styles.badgePillText, { color: Colors.accentPink }]}>4 Preguntas</Text>
+                <Text style={[styles.badgePillText, { color: Colors.accentPink }]}>
+                  {t('jobs.badge_four_questions')}
+                </Text>
               </View>
             </View>
 
-            <Text style={styles.actionCardTitle}>Cuestionario Rápido de Preferencias</Text>
-            <Text style={styles.actionCardDesc}>
-              Indicá tu situación actual, qué puesto o profesión buscás (sin encasillarte en categorías cerradas) y qué modalidad preferís.
-            </Text>
+            <Text style={styles.actionCardTitle}>{t('jobs.quiz_title')}</Text>
+            <Text style={styles.actionCardDesc}>{t('jobs.quiz_desc')}</Text>
 
             <View style={styles.actionCardCtaRow}>
               <Text style={[styles.actionCardCtaText, { color: Colors.textPrimary }]}>
-                Comenzar preguntas
+                {t('jobs.start_questions')}
               </Text>
               <Feather name="arrow-right" size={16} color={Colors.textPrimary} />
             </View>
@@ -291,26 +357,29 @@ export default function JobsScreen() {
 
           {/* Tarjeta de Beneficios */}
           <View style={styles.benefitsCard}>
-            <Text style={styles.benefitsHeading}>BENEFICIOS DE LA SECCIÓN</Text>
+            <Text style={styles.benefitsHeading}>{t('jobs.benefits_heading')}</Text>
 
             <View style={styles.benefitRow}>
               <View style={[styles.miniDot, { backgroundColor: Colors.success }]} />
               <Text style={styles.benefitRowText}>
-                <Text style={{ fontWeight: '700' }}>Enlaces Directos:</Text> Búsquedas ya filtradas en LinkedIn, Computrabajo, Indeed y Bumeran.
+                <Text style={{ fontWeight: '700' }}>{t('jobs.benefit_links_label')}</Text>{' '}
+                {t('jobs.benefit_links_text')}
               </Text>
             </View>
 
             <View style={styles.benefitRow}>
               <View style={[styles.miniDot, { backgroundColor: Colors.primary }]} />
               <Text style={styles.benefitRowText}>
-                <Text style={{ fontWeight: '700' }}>Carta / Pitch de Presentación:</Text> Texto generado listo para enviar a reclutadores por chat o mail.
+                <Text style={{ fontWeight: '700' }}>{t('jobs.benefit_pitch_label')}</Text>{' '}
+                {t('jobs.benefit_pitch_text')}
               </Text>
             </View>
 
             <View style={styles.benefitRow}>
               <View style={[styles.miniDot, { backgroundColor: Colors.warning }]} />
               <Text style={styles.benefitRowText}>
-                <Text style={{ fontWeight: '700' }}>Simulacro de Entrevista:</Text> Acceso a practicar preguntas típicas de tu puesto en 1 toque.
+                <Text style={{ fontWeight: '700' }}>{t('jobs.benefit_interview_label')}</Text>{' '}
+                {t('jobs.benefit_interview_text')}
               </Text>
             </View>
           </View>
@@ -333,10 +402,10 @@ export default function JobsScreen() {
             activeOpacity={0.7}
           >
             <Feather name="arrow-left" size={16} color={Colors.textPrimary} style={{ marginRight: 6 }} />
-            <Text style={styles.backButtonText}>Atrás</Text>
+            <Text style={styles.backButtonText}>{t('common.back')}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.navBarTitle}>Subir Currículum</Text>
+          <Text style={styles.navBarTitle}>{t('jobs.upload_cv_nav')}</Text>
           <View style={{ width: 60 }} />
         </View>
 
@@ -345,10 +414,8 @@ export default function JobsScreen() {
           contentContainerStyle={styles.cvContentContainer}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.sectionTitle}>Cargá tu CV en formato PDF</Text>
-          <Text style={styles.sectionSubtitle}>
-            Buscamos vacantes exactas y puestos afines en LinkedIn, Computrabajo e Indeed.
-          </Text>
+          <Text style={styles.sectionTitle}>{t('jobs.cv_section_title')}</Text>
+          <Text style={styles.sectionSubtitle}>{t('jobs.cv_section_subtitle')}</Text>
 
           {/* Dropzone interactiva */}
           <TouchableOpacity
@@ -366,7 +433,8 @@ export default function JobsScreen() {
                     {cvFile.name}
                   </Text>
                   <Text style={styles.fileSize}>
-                    {cvFile.size ? `${Math.round(cvFile.size / 1024)} KB` : 'Documento PDF'} • Listo para analizar
+                    {cvFile.size ? `${Math.round(cvFile.size / 1024)} KB` : t('jobs.pdf_document')} •{' '}
+                    {t('jobs.ready_to_analyze')}
                   </Text>
                 </View>
                 <View style={styles.checkBadge}>
@@ -378,8 +446,8 @@ export default function JobsScreen() {
                 <View style={styles.uploadIconCircle}>
                   <Feather name="upload-cloud" size={32} color={Colors.primary} />
                 </View>
-                <Text style={styles.dropzoneTitle}>Tocar para elegir archivo PDF</Text>
-                <Text style={styles.dropzoneHint}>Formatos admitidos: .pdf (máx. 10 MB)</Text>
+                <Text style={styles.dropzoneTitle}>{t('jobs.dropzone_title')}</Text>
+                <Text style={styles.dropzoneHint}>{t('jobs.dropzone_hint')}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -391,23 +459,21 @@ export default function JobsScreen() {
               activeOpacity={0.7}
             >
               <Feather name="refresh-cw" size={13} color={Colors.textSecondary} style={{ marginRight: 4 }} />
-              <Text style={styles.changeFileText}>Elegir otro archivo</Text>
+              <Text style={styles.changeFileText}>{t('jobs.change_file')}</Text>
             </TouchableOpacity>
           )}
 
           {/* Campo de rol o puesto de interés */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>¿A QUÉ PUESTO O ROL QUERÉS APLICAR?</Text>
+            <Text style={styles.inputLabel}>{t('jobs.target_role_label')}</Text>
             <TextInput
               style={styles.textInput}
               value={customRoleFromCv}
               onChangeText={setCustomRoleFromCv}
-              placeholder="Ej: Desarrollador Backend, Analista Contable, Ventas..."
+              placeholder={t('jobs.target_role_placeholder')}
               placeholderTextColor={Colors.textMuted}
             />
-            <Text style={styles.inputHelp}>
-              Si lo dejás en blanco, la IA buscará vacantes acordes a tu título y experiencia en el CV.
-            </Text>
+            <Text style={styles.inputHelp}>{t('jobs.target_role_help')}</Text>
           </View>
 
           {/* Botón de Procesar */}
@@ -421,7 +487,7 @@ export default function JobsScreen() {
             activeOpacity={0.8}
           >
             <Feather name="search" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-            <Text style={styles.primaryCtaButtonText}>Analizar y Buscar Empleos</Text>
+            <Text style={styles.primaryCtaButtonText}>{t('jobs.analyze_button')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
@@ -444,10 +510,12 @@ export default function JobsScreen() {
             activeOpacity={0.7}
           >
             <Feather name="arrow-left" size={16} color={Colors.textPrimary} style={{ marginRight: 6 }} />
-            <Text style={styles.backButtonText}>Atrás</Text>
+            <Text style={styles.backButtonText}>{t('common.back')}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.navBarTitle}>Paso {quizStep + 1} de 4</Text>
+          <Text style={styles.navBarTitle}>
+            {t('jobs.step_of', { current: quizStep + 1, total: 4 })}
+          </Text>
           <View style={{ width: 60 }} />
         </View>
 
@@ -466,14 +534,14 @@ export default function JobsScreen() {
           {/* PASO 1: Situación laboral actual */}
           {quizStep === 0 && (
             <View style={{ gap: Spacing.md }}>
-              <Text style={styles.questionTitle}>¿Cuál es tu situación laboral actual?</Text>
-              <Text style={styles.questionSubtitle}>Seleccioná tu estado para calibrar el mensaje de presentación.</Text>
+              <Text style={styles.questionTitle}>{t('jobs.q1_title')}</Text>
+              <Text style={styles.questionSubtitle}>{t('jobs.q1_subtitle')}</Text>
 
               {[
-                'Desempleado/a (en búsqueda activa)',
-                'Empleado/a (busco mejores oportunidades o cambio)',
-                'Estudiante / Busco mi primer empleo',
-                'Autónomo/a / Freelance',
+                t('jobs.situation_unemployed'),
+                t('jobs.situation_employed'),
+                t('jobs.situation_student'),
+                t('jobs.situation_freelance'),
               ].map((opt) => (
                 <TouchableOpacity
                   key={opt}
@@ -498,13 +566,13 @@ export default function JobsScreen() {
           {/* PASO 2: Disponibilidad y tipo de búsqueda */}
           {quizStep === 1 && (
             <View style={{ gap: Spacing.md }}>
-              <Text style={styles.questionTitle}>¿Cómo buscas trabajo en este momento?</Text>
-              <Text style={styles.questionSubtitle}>Definí la urgencia y disponibilidad de tu postulación.</Text>
+              <Text style={styles.questionTitle}>{t('jobs.q2_title')}</Text>
+              <Text style={styles.questionSubtitle}>{t('jobs.q2_subtitle')}</Text>
 
               {[
-                'Búsqueda activa urgente (disponibilidad inmediata)',
-                'Abierto/a a ofertas interesantes y desafíos',
-                'Solo explorando el mercado laboral',
+                t('jobs.urgency_active'),
+                t('jobs.urgency_open'),
+                t('jobs.urgency_exploring'),
               ].map((opt) => (
                 <TouchableOpacity
                   key={opt}
@@ -529,25 +597,23 @@ export default function JobsScreen() {
           {/* PASO 3: Puesto deseado libre (sin encasillar) */}
           {quizStep === 2 && (
             <View style={{ gap: Spacing.md }}>
-              <Text style={styles.questionTitle}>¿A qué puesto o profesión aspirás?</Text>
-              <Text style={styles.questionSubtitle}>
-                Escribí libremente el nombre del rol o elegí una sugerencia rápida.
-              </Text>
+              <Text style={styles.questionTitle}>{t('jobs.q3_title')}</Text>
+              <Text style={styles.questionSubtitle}>{t('jobs.q3_subtitle')}</Text>
 
               <View style={styles.inputGroup}>
                 <TextInput
                   style={styles.textInputLarge}
                   value={targetRole}
                   onChangeText={setTargetRole}
-                  placeholder="Ej: Desarrollador Backend, Asistente Contable, Ventas..."
+                  placeholder={t('jobs.desired_role_placeholder')}
                   placeholderTextColor={Colors.textMuted}
                   autoFocus
                 />
               </View>
 
-              <Text style={styles.chipsHeading}>SUGERENCIAS RÁPIDAS (OPCIONAL):</Text>
+              <Text style={styles.chipsHeading}>{t('jobs.quick_suggestions')}</Text>
               <View style={styles.chipsWrap}>
-                {ROLE_SUGGESTIONS.map((sug) => (
+                {roleSuggestions.map((sug) => (
                   <TouchableOpacity
                     key={sug.title}
                     style={[
@@ -578,7 +644,7 @@ export default function JobsScreen() {
                 disabled={!targetRole.trim()}
                 activeOpacity={0.8}
               >
-                <Text style={styles.primaryCtaButtonText}>Continuar</Text>
+                <Text style={styles.primaryCtaButtonText}>{t('jobs.continue')}</Text>
                 <Feather name="arrow-right" size={16} color="#FFFFFF" style={{ marginLeft: 6 }} />
               </TouchableOpacity>
             </View>
@@ -587,14 +653,14 @@ export default function JobsScreen() {
           {/* PASO 4: Modalidad preferida */}
           {quizStep === 3 && (
             <View style={{ gap: Spacing.md }}>
-              <Text style={styles.questionTitle}>¿Qué modalidad de trabajo preferís?</Text>
-              <Text style={styles.questionSubtitle}>Filtraremos las ofertas para adecuarlas a tu preferencia.</Text>
+              <Text style={styles.questionTitle}>{t('jobs.q4_title')}</Text>
+              <Text style={styles.questionSubtitle}>{t('jobs.q4_subtitle')}</Text>
 
               {[
-                '100% Remoto (Home Office)',
-                'Híbrido (días en oficina y casa)',
-                'Presencial',
-                'Abierto a cualquier modalidad',
+                t('jobs.modality_remote'),
+                t('jobs.modality_hybrid'),
+                t('jobs.modality_onsite'),
+                t('jobs.modality_any'),
               ].map((opt) => (
                 <TouchableOpacity
                   key={opt}
@@ -621,7 +687,7 @@ export default function JobsScreen() {
   }
 
   // =========================================================================
-  // PANTALLA 4: ESTADO DE ANÁLISIS IA
+  // PANTALLA 4: ESTADO DE ANÁLISIS IA (mientras corre la llamada real al backend)
   // =========================================================================
   if (stage === 'analyzing') {
     return (
@@ -629,58 +695,36 @@ export default function JobsScreen() {
         <View style={styles.analyzingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} style={{ marginBottom: 20 }} />
 
-          <Text style={styles.analyzingTitle}>Buscando vacantes para {cleanRole}</Text>
-          <Text style={styles.analyzingSubtitle}>
-            Estamos generando los enlaces a búsquedas activas y puestos afines en portales líderes.
-          </Text>
+          <Text style={styles.analyzingTitle}>{t('jobs.analyzing_title_cv')}</Text>
+          <Text style={styles.analyzingSubtitle}>{t('jobs.analyzing_subtitle')}</Text>
 
           <View style={styles.analyzingStepsList}>
+            {/* Paso en curso: subida del PDF + lectura con IA (el spinner refleja la llamada real) */}
             <View style={styles.analyzingStepRow}>
-              <Feather
-                name={analyzingStep >= 0 ? 'check-circle' : 'circle'}
-                size={18}
-                color={analyzingStep >= 0 ? Colors.success : Colors.textMuted}
-              />
+              {isAnalyzingCv ? (
+                <ActivityIndicator size="small" color={Colors.primary} />
+              ) : (
+                <Feather name="check-circle" size={18} color={Colors.success} />
+              )}
               <Text
                 style={[
                   styles.analyzingStepText,
-                  analyzingStep >= 0 && { color: Colors.textPrimary, fontWeight: '700' },
+                  { color: Colors.textPrimary, fontWeight: '700' },
                 ]}
               >
-                Configurando búsquedas directas en LinkedIn, Computrabajo e Indeed
+                {t('jobs.analyzing_step_reading_cv')}
               </Text>
             </View>
 
+            {/* Pasos siguientes: quedan pendientes hasta que responde la IA (ahí pasamos a resultados) */}
             <View style={styles.analyzingStepRow}>
-              <Feather
-                name={analyzingStep >= 1 ? 'check-circle' : 'circle'}
-                size={18}
-                color={analyzingStep >= 1 ? Colors.success : Colors.textMuted}
-              />
-              <Text
-                style={[
-                  styles.analyzingStepText,
-                  analyzingStep >= 1 && { color: Colors.textPrimary, fontWeight: '700' },
-                ]}
-              >
-                Mapeando puestos afines y referidos
-              </Text>
+              <Feather name="circle" size={18} color={Colors.textMuted} />
+              <Text style={styles.analyzingStepText}>{t('jobs.analyzing_step_2')}</Text>
             </View>
 
             <View style={styles.analyzingStepRow}>
-              <Feather
-                name={analyzingStep >= 2 ? 'check-circle' : 'circle'}
-                size={18}
-                color={analyzingStep >= 2 ? Colors.success : Colors.textMuted}
-              />
-              <Text
-                style={[
-                  styles.analyzingStepText,
-                  analyzingStep >= 2 && { color: Colors.textPrimary, fontWeight: '700' },
-                ]}
-              >
-                Generando pitch de postulación personalizado
-              </Text>
+              <Feather name="circle" size={18} color={Colors.textMuted} />
+              <Text style={styles.analyzingStepText}>{t('jobs.analyzing_step_3')}</Text>
             </View>
           </View>
         </View>
@@ -701,10 +745,10 @@ export default function JobsScreen() {
           activeOpacity={0.7}
         >
           <Feather name="arrow-left" size={16} color={Colors.textPrimary} style={{ marginRight: 6 }} />
-          <Text style={styles.backButtonText}>Menú de empleos</Text>
+          <Text style={styles.backButtonText}>{t('jobs.menu_jobs')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.navBarTitle}>Resultados</Text>
+        <Text style={styles.navBarTitle}>{t('jobs.results_title')}</Text>
         <View style={{ width: 60 }} />
       </View>
 
@@ -718,35 +762,75 @@ export default function JobsScreen() {
           <View style={styles.matchBadgeRow}>
             <View style={styles.matchPill}>
               <Feather name="check" size={13} color="#FFFFFF" />
-              <Text style={styles.matchPillText}>BÚSQUEDA OBJETIVA</Text>
+              <Text style={styles.matchPillText}>{t('jobs.objective_search_badge')}</Text>
             </View>
             {stageSource === 'cv' && (
               <View style={[styles.matchPill, { backgroundColor: '#FDF4FF' }]}>
-                <Text style={[styles.matchPillText, { color: Colors.accentPink }]}>Basado en tu CV</Text>
+                <Text style={[styles.matchPillText, { color: Colors.accentPink }]}>
+                  {t('jobs.based_on_cv')}
+                </Text>
               </View>
             )}
           </View>
 
           <Text style={styles.resultsHeading}>
-            Ofertas de empleo para "{cleanRole}"
+            {t('jobs.results_heading', { role: cleanRole })}
           </Text>
           <Text style={styles.resultsSubheading}>
             {stageSource === 'cv'
-              ? `Generamos los enlaces con filtros precisos a partir de tu currículum (${cvFile?.name}).`
-              : 'Resultados configurados según tu situación laboral y puesto objetivo.'}
+              ? t('jobs.results_subheading_cv', { fileName: cvFile?.name })
+              : t('jobs.results_subheading_quiz')}
           </Text>
         </View>
+
+        {/* PERFIL REAL EXTRAÍDO POR LA IA DEL PDF */}
+        {stageSource === 'cv' && cvAnalysis && (
+          <View style={styles.aiProfileCard}>
+            <View style={styles.aiProfileHeader}>
+              <Feather name="cpu" size={15} color={Colors.primary} />
+              <Text style={styles.aiProfileTitle}>{t('jobs.ai_profile_title')}</Text>
+            </View>
+
+            <Text style={styles.aiProfileRole}>{cvAnalysis.role}</Text>
+
+            {!!cvAnalysis.seniority && (
+              <Text style={styles.aiProfileMeta}>
+                <Text style={styles.aiProfileMetaLabel}>{t('jobs.ai_seniority_label')}: </Text>
+                {cvAnalysis.seniority}
+              </Text>
+            )}
+
+            {cvAnalysis.skills.length > 0 && (
+              <View style={styles.aiProfileSkillsBlock}>
+                <Text style={styles.aiProfileMetaLabel}>{t('jobs.ai_skills_label')}:</Text>
+                <View style={styles.aiSkillsWrap}>
+                  {cvAnalysis.skills.map((skill, index) => (
+                    <View key={`${index}-${skill}`} style={styles.aiSkillChip}>
+                      <Text style={styles.aiSkillChipText}>{skill}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {!!cvAnalysis.summary && (
+              <Text style={styles.aiProfileSummary}>{cvAnalysis.summary}</Text>
+            )}
+          </View>
+        )}
 
         {/* AVISO ORIENTATIVO DE VACANTES Y PUESTOS AFINES */}
         <View style={styles.referredNoticeBox}>
           <Feather name="info" size={16} color={Colors.primary} style={{ marginTop: 2 }} />
           <Text style={styles.referredNoticeText}>
-            Los siguientes enlaces te conectan directamente a vacantes activas de <Text style={{ fontWeight: '800' }}>"{cleanRole}"</Text>. En caso de que en tu localidad no haya un puesto exacto hoy, el portal te mostrará automáticamente los puestos afines y referidos más compatibles.
+            {t('jobs.referred_notice_prefix')}{' '}
+            <Text style={{ fontWeight: '800' }}>{`"${cleanRole}"`}</Text>
+            {t('jobs.referred_notice_suffix')}
           </Text>
         </View>
 
         {/* ACCESOS DIRECTOS A PORTALES DE BÚSQUEDA */}
-        <Text style={styles.sectionHeading}>POSTULARME AHORA EN PORTALES</Text>
+        <Text style={styles.sectionHeading}>{t('jobs.apply_now_heading')}</Text>
 
         {/* 1. LinkedIn Jobs */}
         <TouchableOpacity
@@ -761,11 +845,13 @@ export default function JobsScreen() {
             <View style={styles.portalTitleRow}>
               <Text style={styles.portalName}>LinkedIn Jobs</Text>
               <View style={styles.activeBadge}>
-                <Text style={styles.activeBadgeText}>Enlace activo</Text>
+                <Text style={styles.activeBadgeText}>{t('jobs.active_link')}</Text>
               </View>
             </View>
             <Text style={styles.portalDesc}>
-              Búsqueda de "{cleanRole}" {isRemote ? 'con filtro remoto' : 'en Argentina'}
+              {isRemote
+                ? t('jobs.linkedin_desc_remote', { role: cleanRole })
+                : t('jobs.linkedin_desc_local', { role: cleanRole })}
             </Text>
           </View>
           <Feather name="external-link" size={18} color={Colors.textSecondary} />
@@ -784,11 +870,11 @@ export default function JobsScreen() {
             <View style={styles.portalTitleRow}>
               <Text style={styles.portalName}>Computrabajo</Text>
               <View style={styles.activeBadge}>
-                <Text style={styles.activeBadgeText}>Enlace activo</Text>
+                <Text style={styles.activeBadgeText}>{t('jobs.active_link')}</Text>
               </View>
             </View>
             <Text style={styles.portalDesc}>
-              Ofertas y avisos vigentes para "{cleanRole}"
+              {t('jobs.computrabajo_desc', { role: cleanRole })}
             </Text>
           </View>
           <Feather name="external-link" size={18} color={Colors.textSecondary} />
@@ -807,12 +893,10 @@ export default function JobsScreen() {
             <View style={styles.portalTitleRow}>
               <Text style={styles.portalName}>Indeed & Glassdoor</Text>
               <View style={styles.activeBadge}>
-                <Text style={styles.activeBadgeText}>Enlace activo</Text>
+                <Text style={styles.activeBadgeText}>{t('jobs.active_link')}</Text>
               </View>
             </View>
-            <Text style={styles.portalDesc}>
-              Vacantes abiertas y salarios de referencia
-            </Text>
+            <Text style={styles.portalDesc}>{t('jobs.indeed_desc')}</Text>
           </View>
           <Feather name="external-link" size={18} color={Colors.textSecondary} />
         </TouchableOpacity>
@@ -830,12 +914,10 @@ export default function JobsScreen() {
             <View style={styles.portalTitleRow}>
               <Text style={styles.portalName}>Bumeran</Text>
               <View style={styles.activeBadge}>
-                <Text style={styles.activeBadgeText}>Enlace activo</Text>
+                <Text style={styles.activeBadgeText}>{t('jobs.active_link')}</Text>
               </View>
             </View>
-            <Text style={styles.portalDesc}>
-              Búsquedas de empresas consolidadas en Argentina
-            </Text>
+            <Text style={styles.portalDesc}>{t('jobs.bumeran_desc')}</Text>
           </View>
           <Feather name="external-link" size={18} color={Colors.textSecondary} />
         </TouchableOpacity>
@@ -845,7 +927,7 @@ export default function JobsScreen() {
           <View style={styles.pitchHeader}>
             <View style={styles.pitchTitleRow}>
               <Feather name="message-square" size={16} color={Colors.primary} />
-              <Text style={styles.pitchTitle}>Tu Pitch / Carta de Presentación</Text>
+              <Text style={styles.pitchTitle}>{t('jobs.pitch_card_title')}</Text>
             </View>
             <TouchableOpacity
               style={styles.copyButton}
@@ -863,7 +945,7 @@ export default function JobsScreen() {
                   copiedPitch && { color: Colors.success },
                 ]}
               >
-                {copiedPitch ? 'Copiado' : 'Copiar'}
+                {copiedPitch ? t('jobs.copied') : t('jobs.copy')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -877,9 +959,9 @@ export default function JobsScreen() {
           activeOpacity={0.85}
         >
           <View style={{ flex: 1 }}>
-            <Text style={styles.practiceBannerPre}>PREPARATE ANTES DE LA ENTREVISTA</Text>
+            <Text style={styles.practiceBannerPre}>{t('jobs.practice_pre')}</Text>
             <Text style={styles.practiceBannerTitle}>
-              Simulá preguntas de {cleanRole}
+              {t('jobs.practice_title', { role: cleanRole })}
             </Text>
           </View>
           <View style={styles.practiceBannerArrow}>
@@ -893,6 +975,8 @@ export default function JobsScreen() {
           onPress={() => {
             setQuizStep(0);
             setCvFile(null);
+            setCvAnalysis(null);
+            resetCvAnalysis();
             setCustomRoleFromCv('');
             setTargetRole('');
             setStage('intro');
@@ -900,7 +984,7 @@ export default function JobsScreen() {
           activeOpacity={0.7}
         >
           <Feather name="rotate-ccw" size={14} color={Colors.textSecondary} style={{ marginRight: 6 }} />
-          <Text style={styles.restartText}>Realizar otra búsqueda o cambiar CV</Text>
+          <Text style={styles.restartText}>{t('jobs.restart')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -1443,6 +1527,70 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textPrimary,
     lineHeight: 18,
+  },
+
+  // ── Tarjeta con el perfil extraído por la IA del CV ──────────────────────
+  aiProfileCard: {
+    backgroundColor: '#F8F7FF',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: '#C7D2FE',
+  },
+  aiProfileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  aiProfileTitle: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: Colors.primary,
+    letterSpacing: 0.8,
+    flex: 1,
+  },
+  aiProfileRole: {
+    fontSize: FontSize.lg,
+    fontWeight: '900',
+    color: Colors.textPrimary,
+  },
+  aiProfileMeta: {
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+  },
+  aiProfileMetaLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: '800',
+    color: Colors.textSecondary,
+    letterSpacing: 0.4,
+  },
+  aiProfileSkillsBlock: {
+    gap: 6,
+  },
+  aiSkillsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  aiSkillChip: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.full,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  aiSkillChipText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: Colors.primaryDark,
+  },
+  aiProfileSummary: {
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
   sectionHeading: {
     fontSize: FontSize.xs,

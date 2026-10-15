@@ -4,11 +4,11 @@
  * Tarjeta para mostrar una pregunta en el banco interactivo.
  */
 
-import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { Question, QuestionDifficulty } from '@/src/domain/question';
 import { Colors, Spacing, FontSize, BorderRadius } from '@/src/theme';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 type QuestionCardProps = {
   question: Question;
@@ -21,13 +21,16 @@ const DIFFICULTY_COLOR: Record<QuestionDifficulty, string> = {
   HARD: Colors.difficultyHard,
 };
 
-const DIFFICULTY_LABEL: Record<QuestionDifficulty, string> = {
-  EASY: 'Fácil',
-  MEDIUM: 'Media',
-  HARD: 'Difícil',
-};
-
 export const QuestionCard = ({ question, onPress }: QuestionCardProps) => {
+  const { t } = useTranslation();
+
+  // Etiquetas de dificultad: definidas dentro del componente para poder usar t()
+  const DIFFICULTY_LABEL: Record<QuestionDifficulty, string> = {
+    EASY: t('questions.difficulty_easy'),
+    MEDIUM: t('questions.difficulty_medium'),
+    HARD: t('questions.difficulty_hard'),
+  };
+
   const difficultyColor = DIFFICULTY_COLOR[question.difficulty as QuestionDifficulty] ?? Colors.textMuted;
   const difficultyLabel = DIFFICULTY_LABEL[question.difficulty as QuestionDifficulty] ?? question.difficulty;
 
@@ -52,7 +55,7 @@ export const QuestionCard = ({ question, onPress }: QuestionCardProps) => {
       <View style={styles.footer}>
         <Text style={styles.questionId}>#{question.id}</Text>
         <View style={styles.practiceCta}>
-          <Text style={styles.practiceCtaText}>Practicar ahora</Text>
+          <Text style={styles.practiceCtaText}>{t('questions.practice_now')}</Text>
           <Feather name="arrow-right" size={14} color={Colors.primary} />
         </View>
       </View>

@@ -25,7 +25,12 @@ export type Question = {
   id: number;
   /** Texto completo de la pregunta de entrevista */
   text: string;
-  /** Categoría: "Java", "React", "SQL", "Algoritmos", etc. */
+  /**
+   * Categoría / rubro de la pregunta.
+   * El banco es multi-rubro: "Atención al Cliente", "Ventas y Comercial",
+   * "Administración", "Recursos Humanos", "Marketing Digital", "Logística",
+   * "Contabilidad y Finanzas", "Tecnología", etc.
+   */
   category: string;
   /** Nivel de dificultad */
   difficulty: QuestionDifficulty;

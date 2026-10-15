@@ -4,21 +4,24 @@
  * Animación futurista del núcleo de IA evaluando la respuesta.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View, Animated } from 'react-native';
 import { Colors, BorderRadius, FontSize } from '@/src/theme';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
-const EVALUATION_PHASES = [
-  'Procesando respuesta del candidato...',
-  'Evaluando contenido y adecuación al puesto...',
-  'Midiendo claridad y capacidad de comunicación...',
-  'Verificando estructura, argumentos y vocabulario...',
-  'Comparando con respuestas modelo recomendadas...',
-  'Consolidando retroalimentación final...',
+// Claves de traducción de las fases de evaluación (se traducen en el render)
+const EVALUATION_PHASE_KEYS = [
+  'interview.eval_phase_processing',
+  'interview.eval_phase_evaluating',
+  'interview.eval_phase_clarity',
+  'interview.eval_phase_structure',
+  'interview.eval_phase_comparing',
+  'interview.eval_phase_consolidating',
 ];
 
 export const AiEvaluatingOrb = () => {
+  const { t } = useTranslation();
   const pulseScale = useRef(new Animated.Value(1)).current;
   const pulseOpacity = useRef(new Animated.Value(0.4)).current;
   const [phaseIndex, setPhaseIndex] = useState(0);
@@ -57,7 +60,7 @@ export const AiEvaluatingOrb = () => {
 
     // Rotación de fases
     const interval = setInterval(() => {
-      setPhaseIndex((prev) => (prev + 1) % EVALUATION_PHASES.length);
+      setPhaseIndex((prev) => (prev + 1) % EVALUATION_PHASE_KEYS.length);
     }, 1800);
 
     return () => {
@@ -83,9 +86,9 @@ export const AiEvaluatingOrb = () => {
         </View>
       </View>
 
-      <Text style={styles.title}>Evaluador de IA Activo</Text>
+      <Text style={styles.title}>{t('interview.evaluator_active_title')}</Text>
       <View style={styles.phaseBadge}>
-        <Text style={styles.phaseText}>{EVALUATION_PHASES[phaseIndex]}</Text>
+        <Text style={styles.phaseText}>{t(EVALUATION_PHASE_KEYS[phaseIndex])}</Text>
       </View>
     </View>
   );

@@ -4,7 +4,7 @@
  * Vista del banco de preguntas con filtro en tiempo real por búsqueda y categoría.
  */
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { QuestionCard } from '@/src/components/question-card';
 import { AppButton } from '@/src/components/app-button';
+import { BackButton } from '@/src/components/back-button';
 import { Colors, Spacing, FontSize, BorderRadius } from '@/src/theme';
 import { Feather } from '@expo/vector-icons';
 import type { Question } from '@/src/domain/question';
@@ -69,7 +70,7 @@ export const QuestionsView = ({
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Cargando banco de preguntas...</Text>
+          <Text style={styles.loadingText}>{t('questions.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -80,12 +81,12 @@ export const QuestionsView = ({
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <View style={styles.center}>
           <Text style={styles.emoji}>⚠️</Text>
-          <Text style={styles.stateTitle}>Error al cargar</Text>
+          <Text style={styles.stateTitle}>{t('questions.error_title')}</Text>
           <Text style={styles.stateMessage}>
-            {errorMessage ?? 'No se pudo conectar con el servidor.'}
+            {errorMessage ?? t('questions.error_message')}
           </Text>
           <View style={styles.actionButton}>
-            <AppButton title="Reintentar" onPress={onRetry} />
+            <AppButton title={t('questions.retry')} onPress={onRetry} />
           </View>
         </View>
       </SafeAreaView>
@@ -97,9 +98,12 @@ export const QuestionsView = ({
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Banco de Preguntas</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <BackButton />
+            <Text style={styles.headerTitle}>{t('questions.title')}</Text>
+          </View>
           <Text style={styles.headerSubtitle}>
-            {questions.length} preguntas disponibles para practicar
+            {t('questions.subtitle', { count: questions.length })}
           </Text>
 
           {/* Barra de búsqueda */}
@@ -107,7 +111,7 @@ export const QuestionsView = ({
             <Feather name="search" size={18} color={Colors.textMuted} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Buscar por tecnología o palabra clave..."
+              placeholder={t('questions.search_placeholder')}
               placeholderTextColor={Colors.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -145,7 +149,7 @@ export const QuestionsView = ({
                         isSelected && styles.categoryChipTextSelected,
                       ]}
                     >
-                      {cat === 'ALL' ? 'Todas' : cat}
+                      {cat === 'ALL' ? t('questions.filter_all') : cat}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -158,9 +162,9 @@ export const QuestionsView = ({
         {filteredQuestions.length === 0 ? (
           <View style={styles.center}>
             <Text style={styles.emoji}>🔍</Text>
-            <Text style={styles.stateTitle}>Sin resultados</Text>
+            <Text style={styles.stateTitle}>{t('questions.empty_title')}</Text>
             <Text style={styles.stateMessage}>
-              No encontramos preguntas que coincidan con "{searchQuery}".
+              {t('questions.empty_message', { query: searchQuery })}
             </Text>
           </View>
         ) : (
@@ -182,7 +186,7 @@ export const QuestionsView = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0B0F19',
+    backgroundColor: Colors.background,
   },
   container: {
     flex: 1,

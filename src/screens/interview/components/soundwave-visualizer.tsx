@@ -4,7 +4,7 @@
  * Visualizador animado de ondas de voz mientras se graba con el micrófono.
  */
 
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, View, Animated } from 'react-native';
 import { Colors } from '@/src/theme';
 

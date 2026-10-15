@@ -25,6 +25,7 @@ import { AppButton } from '@/src/components/app-button';
 import { AppInput } from '@/src/components/app-input';
 import { useAuth } from '@/src/hooks/use-auth';
 import { Colors, FontSize, BorderRadius, Spacing } from '@/src/theme';
+import { useTranslation } from 'react-i18next';
 
 type RegisterErrors = {
   name?: string;
@@ -33,9 +34,11 @@ type RegisterErrors = {
   confirmPassword?: string;
 };
 
-const emailRegex = /^\S+@\S+\.\S+$/;
+// Email: exige algo@algo.tld, con un TLD de al menos 2 letras
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export default function RegisterScreen() {
+  const { t } = useTranslation();
   const { register } = useAuth();
   const router = useRouter();
   const [name, setName] = useState('');
@@ -46,12 +49,35 @@ export default function RegisterScreen() {
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  /**
+   * Valida la contraseña contra las reglas de seguridad y devuelve el mensaje de
+   * la PRIMERA regla que no se cumple (o undefined si está OK).
+   *
+   * Mostrar una sola regla a la vez hace el mensaje concreto y accionable,
+   * en vez de un genérico "la contraseña no es válida".
+   *
+   * Las mismas reglas están replicadas en el backend (RegisterRequest),
+   * que es la validación que realmente manda.
+   */
+  const validatePassword = (value: string): string | undefined => {
+    if (value.length < 8) return t('auth.password_rule_length');
+    if (!/[A-Z]/.test(value)) return t('auth.password_rule_uppercase');
+    if (!/[a-z]/.test(value)) return t('auth.password_rule_lowercase');
+    if (!/[^A-Za-z0-9]/.test(value)) return t('auth.password_rule_special');
+    return undefined;
+  };
+
   const validate = () => {
     const nextErrors: RegisterErrors = {};
-    if (!name.trim()) nextErrors.name = 'Ingresa tu nombre.';
-    if (!emailRegex.test(email.trim())) nextErrors.email = 'Ingresa un email válido.';
-    if (password.trim().length < 6) nextErrors.password = 'La contraseña debe tener al menos 6 caracteres.';
-    if (confirmPassword !== password) nextErrors.confirmPassword = 'Las contraseñas no coinciden.';
+    if (!name.trim()) nextErrors.name = t('auth.error_name_required');
+    if (!emailRegex.test(email.trim())) nextErrors.email = t('auth.error_email');
+
+    // Se asigna solo si hay error: si no, la clave quedaría presente con valor
+    // undefined y el conteo de Object.keys daría por fallida la validación.
+    const passwordError = validatePassword(password);
+    if (passwordError) nextErrors.password = passwordError;
+
+    if (confirmPassword !== password) nextErrors.confirmPassword = t('auth.error_passwords_match');
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -65,7 +91,7 @@ export default function RegisterScreen() {
       await register({ name: name.trim(), email: email.trim(), password });
       router.replace('/home');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
+      const message = error instanceof Error ? error.message : t('auth.error_unexpected');
       setFormError(message);
     } finally {
       setIsSubmitting(false);
@@ -82,15 +108,15 @@ export default function RegisterScreen() {
           
           <View style={styles.card}>
             <View style={styles.header}>
-              <Text style={styles.title}>Creá tu cuenta</Text>
-              <Text style={styles.subtitle}>Empezá a prepararte hoy</Text>
+              <Text style={styles.title}>{t('auth.register_title')}</Text>
+              <Text style={styles.subtitle}>{t('auth.register_subtitle')}</Text>
             </View>
 
             <View style={styles.formContainer}>
-              <AppInput label="Nombre completo" placeholder="Tu nombre" value={name} onChangeText={setName} autoCapitalize="words" error={errors.name} />
+              <AppInput label={t('auth.name')} placeholder={t('auth.name_placeholder')} value={name} onChangeText={setName} autoCapitalize="words" error={errors.name} />
               <AppInput
-                label="Correo electrónico"
-                placeholder="vos@ejemplo.com"
+                label={t('auth.email')}
+                placeholder={t('auth.email_placeholder')}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -98,22 +124,22 @@ export default function RegisterScreen() {
                 autoCorrect={false}
                 error={errors.email}
               />
-              <AppInput label="Contraseña" placeholder="Mínimo 6 caracteres" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" error={errors.password} />
-              <AppInput label="Confirmar contraseña" placeholder="Mínimo 6 caracteres" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry autoCapitalize="none" error={errors.confirmPassword} />
+              <AppInput label={t('auth.password')} placeholder={t('auth.password_placeholder')} value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" error={errors.password} />
+              <AppInput label={t('auth.confirm_password')} placeholder={t('auth.password_placeholder')} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry autoCapitalize="none" error={errors.confirmPassword} />
               
               {formError ? <Text style={styles.formError}>{formError}</Text> : null}
 
-              <AppButton title="Crear cuenta" onPress={handleRegister} isLoading={isSubmitting} style={styles.submitButton} />
+              <AppButton title={t('auth.register_button')} onPress={handleRegister} isLoading={isSubmitting} style={styles.submitButton} />
             </View>
             
             <Text style={styles.termsText}>
-              Al registrarte aceptás nuestros{'\n'}
-              <Text style={styles.termsLink}>términos y política de privacidad</Text>
+              {t('auth.terms_text')}{'\n'}
+              <Text style={styles.termsLink}>{t('auth.terms_link')}</Text>
             </Text>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>¿Ya tenés cuenta?</Text>
-              <Link href="/login" style={styles.link}>Iniciá sesión</Link>
+              <Text style={styles.footerText}>{t('auth.login_link')}</Text>
+              <Link href="/login" style={styles.link}>{t('auth.login_link_action')}</Link>
             </View>
           </View>
 

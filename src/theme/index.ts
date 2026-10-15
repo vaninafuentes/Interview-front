@@ -1,13 +1,16 @@
 /**
  * src/theme/index.ts
  * ------------------
- * Sistema de diseño central de la aplicación — Dark Mode Pro High-Tech.
+ * Sistema de diseño central de la aplicación.
  *
- * Paleta moderna de alto contraste, legible y estética:
- *   - Background: Obsidian Space Slate (#0B0F19)
- *   - Superficies: Dark Slate (#111827 / #1E293B)
- *   - Acentos: Electric Amber & Gold Flame (#F59E0B / #FBBF24)
- *   - Tipografía: Blanco puro (#FFFFFF) y Slate (#94A3B8)
+ * Tema CLARO con paleta de marca índigo / violeta:
+ *   - Background: lavanda suave (#F8F7FF)
+ *   - Superficies: blanco puro (#FFFFFF) y lavanda claro (#F1EFFF)
+ *   - Primario: índigo (#6366F1), con acentos fucsia (#EC4899) y violeta (#8B5CF6)
+ *   - Tipografía: gris casi negro (#111827) sobre fondo claro
+ *
+ * IMPORTANTE: `light` y `dark` son idénticos a propósito — la app usa un único
+ * tema claro. No hay soporte de modo oscuro implementado todavía.
  */
 
 export const Colors = {

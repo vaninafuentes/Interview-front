@@ -29,13 +29,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 type HomeViewProps = {
   user: User | null;
   stats?: InterviewStats;
   isStatsLoading: boolean;
-  isLoggingOut: boolean;
-  onLogout: () => void;
   onRefreshStats?: () => void;
 };
 
@@ -52,11 +51,12 @@ export const HomeView = ({
   isStatsLoading,
   onRefreshStats,
 }: HomeViewProps) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const initials = getInitials(user?.name ?? 'U');
 
   const streakDays = stats?.currentStreak ?? 0;
-  const streakText = streakDays === 1 ? '1 día' : `${streakDays} días`;
+  const streakText = t('home.streak_count', { count: streakDays });
   const avgScore = stats?.averageScore ?? 0;
 
   // Animación suave de respiración del fuego de racha
@@ -111,30 +111,19 @@ export const HomeView = ({
           </TouchableOpacity>
         </View>
 
-        {/* ── Badge de Calificación "Excellent 4.7" ── */}
-        <View style={styles.ratingBadge}>
-          <Text style={styles.ratingLabel}>Excellent</Text>
-          <View style={styles.starsRow}>
-            {[1, 2, 3, 4, 5].map((s) => (
-              <Feather key={s} name="star" size={13} color="#10B981" style={{ marginHorizontal: 1 }} />
-            ))}
-          </View>
-          <Text style={styles.ratingNumber}>4.7</Text>
-        </View>
-
         {/* ── Titular Heroico Estilo aiApply ── */}
         <View style={styles.heroSection}>
           <Text style={styles.heroHeading}>
-            Mantén calma y claridad en toda entrevista con un{' '}
-            <Text style={styles.heroHeadingHighlight}>Asistente IA de Entrevistas</Text>
+            {t('home.hero_heading')}{' '}
+            <Text style={styles.heroHeadingHighlight}>{t('home.hero_heading_highlight')}</Text>
           </Text>
 
           <Text style={styles.heroSubhead}>
-            Tu entrenador personal de entrevistas impulsado por IA
+            {t('home.hero_subhead')}
           </Text>
 
           <Text style={styles.heroDescription}>
-            Dejá de dudar tus respuestas con simulación por voz, preguntas técnicas reales y feedback inmediato para estar 100% preparado en tus procesos de selección.
+            {t('home.hero_description')}
           </Text>
 
           {/* Botón Principal aiApply CTA */}
@@ -143,7 +132,7 @@ export const HomeView = ({
             activeOpacity={0.85}
             onPress={() => router.push('/(tabs)/interview')}
           >
-            <Text style={styles.mainCtaText}>Prueba Interview IA ahora</Text>
+            <Text style={styles.mainCtaText}>{t('home.cta_button')}</Text>
             <Feather name="arrow-right" size={18} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
@@ -158,7 +147,7 @@ export const HomeView = ({
             </View>
             <View style={styles.metricTextContainer}>
               <Text style={styles.metricLabel} numberOfLines={1}>
-                RACHA
+                {t('home.streak_label')}
               </Text>
               <Text style={styles.streakText} numberOfLines={1} adjustsFontSizeToFit>
                 {streakText}
@@ -172,7 +161,7 @@ export const HomeView = ({
             </View>
             <View style={styles.metricTextContainer}>
               <Text style={styles.metricLabel} numberOfLines={1}>
-                PROMEDIO
+                {t('home.avg_label')}
               </Text>
               <Text style={styles.scoreText} numberOfLines={1} adjustsFontSizeToFit>
                 {avgScore > 0 ? `${avgScore} / 10` : '—'}
@@ -182,7 +171,7 @@ export const HomeView = ({
         </View>
 
         {/* ── Secciones Destacadas (Acceso Directo Sin Sobrecarga) ── */}
-        <Text style={styles.sectionTitle}>EXPLORAR HERRAMIENTAS</Text>
+        <Text style={styles.sectionTitle}>{t('home.explore_title')}</Text>
 
         {/* Botón 1: Banco de Preguntas (Accesible desde Home como pidió el usuario) */}
         <TouchableOpacity
@@ -195,13 +184,13 @@ export const HomeView = ({
           </View>
           <View style={{ flex: 1 }}>
             <View style={styles.toolTitleRow}>
-              <Text style={styles.toolTitle}>Banco de Preguntas</Text>
+              <Text style={styles.toolTitle}>{t('home.tool_questions_title')}</Text>
               <View style={styles.newPill}>
-                <Text style={styles.newPillText}>+500 PREGUNTAS</Text>
+                <Text style={styles.newPillText}>{t('home.tool_questions_badge')}</Text>
               </View>
             </View>
             <Text style={styles.toolDescription}>
-              Filtrá por área profesional, habilidades técnicas, blandas y nivel de experiencia.
+              {t('home.tool_questions_desc')}
             </Text>
           </View>
           <Feather name="chevron-right" size={20} color={Colors.textMuted} />
@@ -218,13 +207,13 @@ export const HomeView = ({
           </View>
           <View style={{ flex: 1 }}>
             <View style={styles.toolTitleRow}>
-              <Text style={styles.toolTitle}>Búsqueda y Postulación</Text>
+              <Text style={styles.toolTitle}>{t('home.tool_jobs_title')}</Text>
               <View style={[styles.newPill, { backgroundColor: '#FCE7F3' }]}>
-                <Text style={[styles.newPillText, { color: '#BE185D' }]}>MATCH</Text>
+                <Text style={[styles.newPillText, { color: '#BE185D' }]}>{t('home.tool_jobs_badge')}</Text>
               </View>
             </View>
             <Text style={styles.toolDescription}>
-              Cuestionario inteligente y links directos a vacantes en LinkedIn, Computrabajo e Indeed.
+              {t('home.tool_jobs_desc')}
             </Text>
           </View>
           <Feather name="chevron-right" size={20} color={Colors.textMuted} />
@@ -240,9 +229,9 @@ export const HomeView = ({
             <Feather name="mic" size={22} color={Colors.success} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.toolTitle}>Simulacro con Voz y Cronómetro</Text>
+            <Text style={styles.toolTitle}>{t('home.tool_interview_title')}</Text>
             <Text style={styles.toolDescription}>
-              Respondé hablando o escribiendo y recibí feedback instantáneo.
+              {t('home.tool_interview_desc')}
             </Text>
           </View>
           <Feather name="chevron-right" size={20} color={Colors.textMuted} />
@@ -306,34 +295,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
     fontSize: FontSize.md,
-  },
-
-  // --- Rating Pill ---
-  ratingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    paddingVertical: 5,
-    paddingHorizontal: 14,
-    borderRadius: BorderRadius.full,
-    gap: 6,
-    marginTop: 8,
-  },
-  ratingLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#065F46',
-  },
-  starsRow: {
-    flexDirection: 'row',
-  },
-  ratingNumber: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#047857',
   },
 
   // --- Hero Section ---

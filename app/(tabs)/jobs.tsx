@@ -1,4 +1,3 @@
-import React from 'react';
 import JobsScreen from '@/src/screens/jobs/jobs-screen';
 
 /**

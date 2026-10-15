@@ -10,7 +10,7 @@
  *   - Sin sobrecarga de historial ni botones redundantes de práctica.
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -28,8 +28,10 @@ import { useInterviewStats } from '@/src/hooks/use-interview-stats';
 import { Colors, BorderRadius, Spacing, FontSize } from '@/src/theme';
 import { Feather } from '@expo/vector-icons';
 import { AppButton } from '@/src/components/app-button';
+import { useTranslation } from 'react-i18next';
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const { user, logout, updateUser } = useAuth();
   const { stats, isLoading: isStatsLoading, refetch: refetchStats } = useInterviewStats();
 
@@ -39,7 +41,7 @@ export default function ProfileScreen() {
   // Estados del formulario de edición
   const [editName, setEditName] = useState(user?.name || '');
   const [editEmail, setEditEmail] = useState(user?.email || '');
-  const [editRole, setEditRole] = useState(user?.role || 'Profesional / Candidato');
+  const [editRole, setEditRole] = useState(user?.role || t('profile.default_role'));
   const [isSaving, setIsSaving] = useState(false);
 
   const handleRefresh = async () => {
@@ -49,13 +51,13 @@ export default function ProfileScreen() {
   const handleOpenEdit = () => {
     setEditName(user?.name || '');
     setEditEmail(user?.email || '');
-    setEditRole(user?.role || 'Profesional / Candidato');
+    setEditRole(user?.role || t('profile.default_role'));
     setIsEditModalOpen(true);
   };
 
   const handleSaveProfile = async () => {
     if (!editName.trim() || !editEmail.trim()) {
-      Alert.alert('Campos requeridos', 'Por favor ingresá tu nombre y correo.');
+      Alert.alert(t('profile.edit_required_title'), t('profile.edit_required_msg'));
       return;
     }
     setIsSaving(true);
@@ -66,9 +68,9 @@ export default function ProfileScreen() {
         role: editRole.trim(),
       });
       setIsEditModalOpen(false);
-      Alert.alert('Perfil actualizado', 'Tus datos se guardaron correctamente.');
+      Alert.alert(t('profile.edit_success_title'), t('profile.edit_success_msg'));
     } catch {
-      Alert.alert('Error', 'No se pudieron guardar los cambios.');
+      Alert.alert(t('common.error'), t('profile.edit_error_msg'));
     } finally {
       setIsSaving(false);
     }
@@ -76,12 +78,12 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      'Cerrar sesión',
-      '¿Estás seguro que querés salir de tu cuenta?',
+      t('profile.logout_confirm_title'),
+      t('profile.logout_confirm_msg'),
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Cerrar sesión',
+          text: t('profile.logout'),
           style: 'destructive',
           onPress: async () => {
             setIsLoggingOut(true);
@@ -129,21 +131,21 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               <Feather name="edit-2" size={14} color={Colors.primary} />
-              <Text style={styles.editPillText}>Editar perfil</Text>
+              <Text style={styles.editPillText}>{t('profile.edit_button')}</Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.userName}>{user?.name || 'Candidato'}</Text>
-          <Text style={styles.userRole}>{user?.role || 'Profesional / Candidato'}</Text>
+          <Text style={styles.userName}>{user?.name || t('profile.default_name')}</Text>
+          <Text style={styles.userRole}>{user?.role || t('profile.default_role')}</Text>
 
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>
               <Feather name="mail" size={14} color={Colors.textMuted} />
-              <Text style={styles.metaText}>{user?.email || 'sin-correo@ejemplo.com'}</Text>
+              <Text style={styles.metaText}>{user?.email || t('profile.default_email')}</Text>
             </View>
             <View style={styles.verifiedBadge}>
               <Feather name="check-circle" size={12} color={Colors.success} />
-              <Text style={styles.verifiedText}>Cuenta activa</Text>
+              <Text style={styles.verifiedText}>{t('profile.account_active')}</Text>
             </View>
           </View>
         </View>
@@ -155,26 +157,26 @@ export default function ProfileScreen() {
               <Text style={{ fontSize: 24 }}>🔥</Text>
             </View>
             <View>
-              <Text style={styles.streakLabel}>Racha de práctica</Text>
+              <Text style={styles.streakLabel}>{t('profile.streak_label')}</Text>
               <Text style={styles.streakValue}>
-                {streakDays} {streakDays === 1 ? 'día consecutivo' : 'días consecutivos'}
+                {streakDays} {streakDays === 1 ? t('profile.streak_day') : t('profile.streak_days')}
               </Text>
             </View>
           </View>
           <View style={styles.streakPill}>
-            <Text style={styles.streakPillText}>+10 pts hoy</Text>
+            <Text style={styles.streakPillText}>{t('profile.streak_points')}</Text>
           </View>
         </View>
 
         {/* ── Estadísticas Globales ── */}
-        <Text style={styles.sectionHeader}>MÉTRICAS DE RENDIMIENTO</Text>
+        <Text style={styles.sectionHeader}>{t('profile.metrics_title')}</Text>
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <View style={[styles.statIconBadge, { backgroundColor: '#EEF2FF' }]}>
               <Feather name="check-square" size={18} color={Colors.primary} />
             </View>
             <Text style={styles.statValue}>{totalInterviews}</Text>
-            <Text style={styles.statLabel}>Preguntas</Text>
+            <Text style={styles.statLabel}>{t('profile.stat_questions')}</Text>
           </View>
 
           <View style={styles.statCard}>
@@ -182,7 +184,7 @@ export default function ProfileScreen() {
               <Feather name="activity" size={18} color={Colors.accentPink} />
             </View>
             <Text style={styles.statValue}>{avgScore > 0 ? `${avgScore}/10` : '—'}</Text>
-            <Text style={styles.statLabel}>Puntaje prom.</Text>
+            <Text style={styles.statLabel}>{t('profile.stat_avg_score')}</Text>
           </View>
 
           <View style={styles.statCard}>
@@ -190,12 +192,12 @@ export default function ProfileScreen() {
               <Feather name="award" size={18} color={Colors.success} />
             </View>
             <Text style={styles.statValue}>{bestScore > 0 ? `${bestScore}/10` : '—'}</Text>
-            <Text style={styles.statLabel}>Mejor nota</Text>
+            <Text style={styles.statLabel}>{t('profile.stat_best_score')}</Text>
           </View>
         </View>
 
         {/* ── Promedio por cada sección / categoría ── */}
-        <Text style={styles.sectionHeader}>PROMEDIO POR SECCIÓN</Text>
+        <Text style={styles.sectionHeader}>{t('profile.section_avg')}</Text>
         <View style={styles.categoryCard}>
           {stats?.categoryAverages && Object.keys(stats.categoryAverages).length > 0 ? (
             Object.entries(stats.categoryAverages).map(([cat, score], index) => (
@@ -232,7 +234,7 @@ export default function ProfileScreen() {
             <View style={styles.emptyCategories}>
               <Feather name="info" size={20} color={Colors.textMuted} />
               <Text style={styles.emptyCategoriesText}>
-                Completá tu primer simulacro para ver el promedio desglosado por sección.
+                {t('profile.empty_categories')}
               </Text>
             </View>
           )}
@@ -247,7 +249,7 @@ export default function ProfileScreen() {
         >
           <Feather name="log-out" size={18} color={Colors.error} />
           <Text style={styles.logoutText}>
-            {isLoggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
+            {isLoggingOut ? t('profile.logging_out') : t('profile.logout')}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -262,30 +264,30 @@ export default function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Editar Información</Text>
+              <Text style={styles.modalTitle}>{t('profile.edit_title')}</Text>
               <TouchableOpacity onPress={() => setIsEditModalOpen(false)} hitSlop={12}>
                 <Feather name="x" size={22} color={Colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Nombre completo</Text>
+              <Text style={styles.inputLabel}>{t('profile.edit_name_label')}</Text>
               <TextInput
                 style={styles.textInput}
                 value={editName}
                 onChangeText={setEditName}
-                placeholder="Tu nombre"
+                placeholder={t('profile.edit_name_placeholder')}
                 placeholderTextColor={Colors.textMuted}
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Correo electrónico (Gmail)</Text>
+              <Text style={styles.inputLabel}>{t('profile.edit_email_label')}</Text>
               <TextInput
                 style={styles.textInput}
                 value={editEmail}
                 onChangeText={setEditEmail}
-                placeholder="vos@gmail.com"
+                placeholder={t('auth.gmail_placeholder')}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 placeholderTextColor={Colors.textMuted}
@@ -293,12 +295,12 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Rol o especialidad deseada</Text>
+              <Text style={styles.inputLabel}>{t('profile.edit_role_label')}</Text>
               <TextInput
                 style={styles.textInput}
                 value={editRole}
                 onChangeText={setEditRole}
-                placeholder="Ej. Ventas, Administración, Marketing, IT..."
+                placeholder={t('profile.edit_role_placeholder')}
                 placeholderTextColor={Colors.textMuted}
               />
             </View>
@@ -308,10 +310,10 @@ export default function ProfileScreen() {
                 style={styles.cancelModalButton}
                 onPress={() => setIsEditModalOpen(false)}
               >
-                <Text style={styles.cancelModalText}>Cancelar</Text>
+                <Text style={styles.cancelModalText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <AppButton
-                title={isSaving ? 'Guardando...' : 'Guardar cambios'}
+                title={isSaving ? t('common.saving') : t('common.save')}
                 onPress={handleSaveProfile}
                 isLoading={isSaving}
                 style={{ flex: 1 }}

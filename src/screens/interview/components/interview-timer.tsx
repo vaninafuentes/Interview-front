@@ -10,10 +10,11 @@
  *   - Controles rápidos integrados (+30s y Pausar/Reanudar).
  */
 
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Animated } from 'react-native';
 import { BorderRadius, FontSize } from '@/src/theme';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 type InterviewTimerProps = {
   timeLeft: number;
@@ -30,6 +31,7 @@ export const InterviewTimer = ({
   onToggleTimer,
   onAddExtraTime,
 }: InterviewTimerProps) => {
+  const { t } = useTranslation();
   const isExpired = timeLeft === 0;
   const isUrgent = timeLeft <= 15;
   const isWarning = timeLeft <= 30;
@@ -73,7 +75,7 @@ export const InterviewTimer = ({
   let themeText = '#B45309'; // Texto ámbar intenso
   let themeAccent = '#D97706'; // Acento principal
   let themeBar = '#F59E0B'; // Barra ámbar viva
-  let statusLabel = 'TIEMPO ESTIMADO';
+  let statusLabel = t('interview.timer_status_estimated');
 
   if (!isTimerEnabled) {
     themeBg = '#F3F4F6';
@@ -81,28 +83,28 @@ export const InterviewTimer = ({
     themeText = '#6B7280';
     themeAccent = '#9CA3AF';
     themeBar = '#D1D5DB';
-    statusLabel = 'CRONÓMETRO PAUSADO';
+    statusLabel = t('interview.timer_status_paused');
   } else if (isExpired) {
     themeBg = '#FEF2F2';
     themeBorder = '#FCA5A5';
     themeText = '#B91C1C';
     themeAccent = '#DC2626';
     themeBar = '#EF4444';
-    statusLabel = '⏰ TIEMPO CUMPLIDO';
+    statusLabel = t('interview.timer_status_expired');
   } else if (isUrgent) {
     themeBg = '#FEF2F2';
     themeBorder = '#FECACA';
     themeText = '#DC2626';
     themeAccent = '#EF4444';
     themeBar = '#EF4444';
-    statusLabel = `🚨 ¡ÚLTIMOS ${timeLeft}s!`;
+    statusLabel = t('interview.timer_status_urgent', { seconds: timeLeft });
   } else if (isWarning) {
     themeBg = '#FFF7ED';
     themeBorder = '#FED7AA';
     themeText = '#C2410C';
     themeAccent = '#EA580C';
     themeBar = '#F97316';
-    statusLabel = `⚠️ QUEDAN ${timeLeft}s`;
+    statusLabel = t('interview.timer_status_warning', { seconds: timeLeft });
   }
 
   return (
@@ -166,7 +168,7 @@ export const InterviewTimer = ({
                 { color: !isTimerEnabled ? '#059669' : themeText },
               ]}
             >
-              {isTimerEnabled ? 'Pausar' : 'Reanudar'}
+              {isTimerEnabled ? t('interview.timer_pause') : t('interview.timer_resume')}
             </Text>
           </TouchableOpacity>
         </View>

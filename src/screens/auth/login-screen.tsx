@@ -16,6 +16,7 @@
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -25,21 +26,24 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 
 import { AppButton } from '@/src/components/app-button';
 import { AppInput } from '@/src/components/app-input';
 import { useAuth } from '@/src/hooks/use-auth';
-import { Colors, FontSize, BorderRadius, Spacing } from '@/src/theme';
+import { Colors, FontSize, Spacing } from '@/src/theme';
+import { useTranslation } from 'react-i18next';
 
 type LoginErrors = {
   email?: string;
   password?: string;
 };
 
-const emailRegex = /^\S+@\S+\.\S+$/;
+// Email: exige algo@algo.tld, con un TLD de al menos 2 letras
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -50,8 +54,14 @@ export default function LoginScreen() {
 
   const validate = () => {
     const nextErrors: LoginErrors = {};
-    if (!emailRegex.test(email.trim())) nextErrors.email = 'Ingresa un email válido.';
-    if (password.trim().length < 6) nextErrors.password = 'La contraseña debe tener al menos 6 caracteres.';
+    if (!emailRegex.test(email.trim())) nextErrors.email = t('auth.error_email');
+
+    // Acá NO se valida el formato ni el largo de la contraseña a propósito:
+    // un usuario registrado antes de las reglas de contraseña segura puede tener
+    // una más corta, y bloquearlo en el login lo dejaría afuera de su propia cuenta.
+    // La validación real la hace el backend al autenticar.
+    if (!password) nextErrors.password = t('auth.error_password_required');
+
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -65,7 +75,7 @@ export default function LoginScreen() {
       await login({ email: email.trim(), password });
       router.replace('/home');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
+      const message = error instanceof Error ? error.message : t('auth.error_unexpected');
       setFormError(message);
     } finally {
       setIsSubmitting(false);
@@ -84,15 +94,15 @@ export default function LoginScreen() {
             <View style={styles.iconContainer}>
               <Feather name="message-square" size={24} color={Colors.primary} />
             </View>
-            <Text style={styles.title}>Bienvenido de nuevo</Text>
-            <Text style={styles.subtitle}>Practicá tu próxima entrevista con feedback inmediato y personalizado</Text>
+            <Text style={styles.title}>{t('auth.login_title')}</Text>
+            <Text style={styles.subtitle}>{t('auth.login_subtitle')}</Text>
           </View>
 
           <View style={styles.card}>
             <View style={styles.formContainer}>
               <AppInput
-                label="Correo electrónico"
-                placeholder="vos@ejemplo.com"
+                label={t('auth.email')}
+                placeholder={t('auth.email_placeholder')}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -102,7 +112,7 @@ export default function LoginScreen() {
               />
               
               <AppInput
-                label="Contraseña"
+                label={t('auth.password')}
                 placeholder="••••••••"
                 value={password}
                 onChangeText={setPassword}
@@ -111,29 +121,23 @@ export default function LoginScreen() {
                 error={errors.password}
               />
               
-              <TouchableOpacity style={styles.forgotPassword}>
-                <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+              <TouchableOpacity
+                style={styles.forgotPassword}
+                onPress={() =>
+                  Alert.alert(t('auth.coming_soon_title'), t('auth.forgot_password_msg'))
+                }
+              >
+                <Text style={styles.forgotPasswordText}>{t('auth.forgot_password')}</Text>
               </TouchableOpacity>
               
               {formError ? <Text style={styles.formError}>{formError}</Text> : null}
 
-              <AppButton title="Ingresar" onPress={handleLogin} isLoading={isSubmitting} />
+              <AppButton title={t('auth.login_button')} onPress={handleLogin} isLoading={isSubmitting} />
             </View>
-
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>o continuar con</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <TouchableOpacity style={styles.googleButton}>
-              <FontAwesome5 name="google" size={18} color={Colors.textPrimary} />
-              <Text style={styles.googleButtonText}>Google</Text>
-            </TouchableOpacity>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>¿No tenés cuenta?</Text>
-              <Link href="/register" style={styles.link}>Registrate</Link>
+              <Text style={styles.footerText}>{t('auth.register_link')}</Text>
+              <Link href="/register" style={styles.link}>{t('auth.register_link_action')}</Link>
             </View>
           </View>
 
@@ -190,42 +194,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   formError: { color: Colors.error, marginBottom: Spacing.sm, textAlign: 'center', fontWeight: '600' },
-  
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-    gap: 10,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  dividerText: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  
-  googleButton: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    backgroundColor: Colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingVertical: 14,
-    borderRadius: BorderRadius.md,
-  },
-  googleButtonText: {
-    fontSize: FontSize.md,
-    color: Colors.textPrimary,
-    fontWeight: '600',
-  },
   
   footer: { marginTop: 28, flexDirection: 'row', justifyContent: 'center', gap: 6, alignItems: 'center' },
   footerText: { color: Colors.textSecondary, fontSize: 14 },

@@ -12,7 +12,7 @@
  *   6. 'complete'   → Scorecard final consolidado con Job Readiness Score
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGenerateQuestions } from '@/src/hooks/use-generate-questions';
@@ -28,6 +28,7 @@ import type {
   InterviewSessionState,
   InterviewFeedbackResponse,
 } from '@/src/domain/interview';
+import { useTranslation } from 'react-i18next';
 
 export type SessionQuestionResult = {
   question: GeneratedQuestion;
@@ -38,6 +39,7 @@ export type SessionQuestionResult = {
 const DEFAULT_TIME_SECONDS = 120; // 2 minutos por pregunta
 
 export default function InterviewScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
   const params = useLocalSearchParams<{
@@ -192,7 +194,7 @@ export default function InterviewScreen() {
       });
       setHint(responseHint);
     } catch {
-      setHint('Pensá en estructurar tu respuesta con un ejemplo concreto de tu experiencia y los resultados logrados.');
+      setHint(t('interview.hint_fallback'));
     } finally {
       setIsHintLoading(false);
     }
@@ -244,7 +246,7 @@ export default function InterviewScreen() {
         }}
         isGenerating={isGenerating}
         generationError={
-          isGenError ? (genError?.message ?? 'Error al generar las preguntas') : null
+          isGenError ? (genError?.message ?? t('interview.error_generating')) : null
         }
         hasActiveSession={questions.length > 0 && sessionState !== 'complete'}
         onResume={handleResume}

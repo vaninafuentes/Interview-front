@@ -17,6 +17,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useQueryClient } from '@tanstack/react-query';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 import type {
@@ -56,6 +57,7 @@ const AUTH_STORAGE_KEY = 'auth-session';
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -117,10 +119,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
   };
 
-  /** Limpia la sesión de AsyncStorage y del estado local */
+  /**
+   * Limpia la sesión de AsyncStorage, del estado local y de la caché de React Query.
+   *
+   * El `queryClient.clear()` es imprescindible: sin él, las estadísticas y el historial
+   * quedan cacheados (staleTime 30s, gcTime 5min por defecto) y el próximo usuario que
+   * inicie sesión en el mismo dispositivo vería los datos del usuario anterior.
+   */
   const clearSession = async () => {
     setUser(null);
     setToken(null);
+    queryClient.clear();
     await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
   };
 
